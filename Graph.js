@@ -2549,29 +2549,51 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         path: [start],
         cost: 0
     };
-    // Frontier: Priority queue ordered by f(p),
-    // f(p) = cost(p) + h(p),
-    // cost(p) = cost of the path p,
-    // h(p) estimates the cost from the end of p to a goal.
-    // The priority queue is the SearchResult<Node> list,
-    // latest added node is the node to examine f(p) for.
-    // While prioQueue(n) != goal
-    // For each node in the frontier, calculate f(p).
-    // Choose node with lowest f(p) and traverse its edge.
-    // (Handle if go back situation)
-    // repeat.
-    // What's missing? 
-    // Heuristic function -> how is the heuristics defined.
-    // Cost function -> how is the cost number defined.
-    // Pseudo code:
-    // let p = 0; // Position in queue under consideration 
-    // while(result.get(p) != goal)
-    // var edge : Edge<Node> = graph.outgoingEdges(result.get(p));
-    // for (var derp in edge)
-    // Example:
-    // A dummy search result: it just picks (three times) 
-    // the first possible neighbour.
     /*
+        Frontier: Priority queue ordered by f(p),
+        f(p) = cost(p) + h(p),
+        cost(p) = cost of the path p,
+        h(p) estimates the cost from the end of p to a goal.
+    */
+    /*
+        The priority queue is the SearchResult<Node> list,
+        latest added node is the node to examine f(p) for.
+    */
+    /*
+        While prioQueue(n) != goal
+        For each node in the frontier, calculate f(p).
+        Choose node with lowest f(p) and traverse its edge.
+        (Handle if go back situation)
+        repeat.
+    */
+    /*
+        What's missing?
+        Heuristic function -> how is the heuristics defined.
+        Cost function -> how is the cost number defined.
+    */
+    //  Pseudo code:
+    // Position in queue under consideration, i.e.
+    // result.path[p] return the Node under consideration
+    var p = 0;
+    while (!goal(result.path[p]) || p > result.path.length) {
+        // Obtain all edges from p to other nodes:
+        var edges = graph.outgoingEdges(result.path[p]);
+        // Check f for each node found at each edge
+        var f = 1000000; // other solution ...
+        var index = -1;
+        for (var i = 0; i < edges.length; i++) {
+            var node = edges[i].to;
+        }
+        // Add min f node:
+        result.path.push(edges[index].to);
+        // Add corresponding cost:
+        result.cost += edges[index].cost;
+    }
+    /*
+        Example:
+        A dummy search result: it just picks (three times)
+        the first possible neighbour.
+    
     while (result.path.length < 3) {
         var edge : Edge<Node> = graph.outgoingEdges(start) [0];
         if (! edge) break;
@@ -2583,24 +2605,36 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
     return result;
 }
 function testAStarSearch() {
-    var result = {
-        path: [],
-        cost: 0
-    };
-    var size = { x: 10, y: 10 };
-    var obs = [{ x: 5, y: 1 }, { x: 5, y: 2 }, { x: 5, y: 3 }, { x: 5, y: 4 }];
-    var graph = new GridGraph(size, obs);
-    /*    while (result.path.length < 3)
+    /*    var result: SearchResult<Node> = {
+            path: [],
+            cost: 0
+        };
+    
+        var size: Coordinate = {x:10,y:10};
+        var obs: Coordinate[] = [{x:5,y:1},{x:5,y:2},{x:5,y:3},{x:5,y:4}];
+        var graph: GridGraph = new GridGraph(size, obs);
+    
+        var node: GridNode = new GridNode({ x: 5, y: 5 });
+        var n = 0;
+    
+        while (n < 3)
         {
             var edges: Edge<GridNode>[] = graph.outgoingEdges(node);
             for (var edge of edges)
             {
-    
+                console.log(node.pos.x);
             }
-    
+            node.pos.x++;
+            n++;
         }
-    */
-    return graph.toString();
+        */
+    var result = {
+        path: [],
+        cost: 0
+    };
+    var node;
+    result.path.push(node);
+    return result.path[0];
 }
 var GridNode = (function () {
     function GridNode(pos) {

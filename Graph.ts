@@ -48,48 +48,81 @@ class SearchResult<Node> {
 * @param timeout Maximum time to spend performing A\* search.
 * @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
 */
-function aStarSearch<Node> (
-    graph : Graph<Node>,
-    start : Node,
-    goal : (n:Node) => boolean,
-    heuristics : (n:Node) => number,
-    timeout : number
-) : SearchResult<Node> {
-    var result : SearchResult<Node> = {
+function aStarSearch<Node>(
+    graph: Graph<Node>,
+    start: Node,
+    goal: (n: Node) => boolean,
+    heuristics: (n: Node) => number,
+    timeout: number
+): SearchResult<Node> {
+    var result: SearchResult<Node> = {
         path: [start],
         cost: 0
     };
-    
-    // Frontier: Priority queue ordered by f(p),
-    // f(p) = cost(p) + h(p),
-    // cost(p) = cost of the path p,
-    // h(p) estimates the cost from the end of p to a goal.
 
-    // The priority queue is the SearchResult<Node> list,
-    // latest added node is the node to examine f(p) for.
+    /* 
+        Frontier: Priority queue ordered by f(p),
+        f(p) = cost(p) + h(p),
+        cost(p) = cost of the path p,
+        h(p) estimates the cost from the end of p to a goal.
+    */
 
+    /* 
+        The priority queue is the SearchResult<Node> list,
+        latest added node is the node to examine f(p) for.
+    */
 
-    // While prioQueue(n) != goal
-    // For each node in the frontier, calculate f(p).
-    // Choose node with lowest f(p) and traverse its edge.
-    // (Handle if go back situation)
-    // repeat.
+    /*  
+        While prioQueue(n) != goal
+        For each node in the frontier, calculate f(p).
+        Choose node with lowest f(p) and traverse its edge.
+        (Handle if go back situation)
+        repeat.
+    */
 
-    // What's missing? 
-    // Heuristic function -> how is the heuristics defined.
-    // Cost function -> how is the cost number defined.
-
-    // Pseudo code:
-    // let p = 0; // Position in queue under consideration 
-    // while(result.get(p) != goal)
-    // var edge : Edge<Node> = graph.outgoingEdges(result.get(p));
-    // for (var derp in edge)
-
-
-    // Example:
-    // A dummy search result: it just picks (three times) 
-    // the first possible neighbour.
     /*
+        What's missing? 
+        Heuristic function -> how is the heuristics defined.
+        Cost function -> how is the cost number defined.
+    */
+
+    //  Pseudo code:
+
+    // Position in queue under consideration, i.e.
+    // result.path[p] return the Node under consideration
+    let p = 0;
+
+    while (!goal(result.path[p]) || p > result.path.length)
+    {
+        // Obtain all edges from p to other nodes:
+        var edges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
+
+    // Check f for each node found at each edge
+    var f: number = 1000000; // other solution ...
+    var index: number = -1;
+    for (let i = 0; i < edges.length; i++) {
+        var node: Node = edges[i].to;
+        /*
+        // Calculate cost and heuristics: 
+        thisNodef = cost(node) + h(node);
+        if (thisNodef < f) 
+        {
+            f = thisNodef;
+            index = i;
+        }
+        */
+    }
+ 
+    // Add min f node:
+    result.path.push(edges[index].to);
+    // Add corresponding cost:
+    result.cost += edges[index].cost;
+}
+    /*
+        Example:
+        A dummy search result: it just picks (three times)
+        the first possible neighbour.
+    
     while (result.path.length < 3) {
         var edge : Edge<Node> = graph.outgoingEdges(start) [0];
         if (! edge) break;
@@ -100,8 +133,9 @@ function aStarSearch<Node> (
     */
     return result;
 }
-function testAStarSearch(): string {
-    var result: SearchResult<Node> = {
+
+function testAStarSearch(): Node {
+/*    var result: SearchResult<Node> = {
         path: [],
         cost: 0
     };
@@ -110,17 +144,30 @@ function testAStarSearch(): string {
     var obs: Coordinate[] = [{x:5,y:1},{x:5,y:2},{x:5,y:3},{x:5,y:4}];
     var graph: GridGraph = new GridGraph(size, obs);    
 
-/*    while (result.path.length < 3)
+    var node: GridNode = new GridNode({ x: 5, y: 5 });
+    var n = 0;
+
+    while (n < 3)
     {
         var edges: Edge<GridNode>[] = graph.outgoingEdges(node);        
         for (var edge of edges)
         {
-
+            console.log(node.pos.x);
         }
+        node.pos.x++;
+        n++;
+    }
+    */
+    var result : SearchResult<Node> = {
+        path: [],
+        cost: 0
+    };
 
-    }    
-*/    
-    return graph.toString();
+    var node: Node;
+
+    result.path.push(node);
+
+    return result.path[0];
 }
 
 //////////////////////////////////////////////////////////////////////
