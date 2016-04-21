@@ -55,11 +55,41 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
     var result : SearchResult<Node> = {
         path: [start],
         cost: 0
     };
+    
+    // Frontier: Priority queue ordered by f(p),
+    // f(p) = cost(p) + h(p),
+    // cost(p) = cost of the path p,
+    // h(p) estimates the cost from the end of p to a goal.
+
+    // The priority queue is the SearchResult<Node> list,
+    // latest added node is the node to examine f(p) for.
+
+
+    // While prioQueue(n) != goal
+    // For each node in the frontier, calculate f(p).
+    // Choose node with lowest f(p) and traverse its edge.
+    // (Handle if go back situation)
+    // repeat.
+
+    // What's missing? 
+    // Heuristic function -> how is the heuristics defined.
+    // Cost function -> how is the cost number defined.
+
+    // Pseudo code:
+    // let p = 0; // Position in queue under consideration 
+    // while(result.get(p) != goal)
+    // var edge : Edge<Node> = graph.outgoingEdges(result.get(p));
+    // for (var derp in edge)
+
+
+    // Example:
+    // A dummy search result: it just picks (three times) 
+    // the first possible neighbour.
+    /*
     while (result.path.length < 3) {
         var edge : Edge<Node> = graph.outgoingEdges(start) [0];
         if (! edge) break;
@@ -67,9 +97,31 @@ function aStarSearch<Node> (
         result.path.push(start);
         result.cost += edge.cost;
     }
+    */
     return result;
 }
+function testAStarSearch(): string {
+    var result: SearchResult<Node> = {
+        path: [],
+        cost: 0
+    };
 
+    var size: Coordinate = {x:10,y:10};
+    var obs: Coordinate[] = [{x:5,y:1},{x:5,y:2},{x:5,y:3},{x:5,y:4}];
+    var graph: GridGraph = new GridGraph(size, obs);    
+
+/*    while (result.path.length < 3)
+    {
+        var edges: Edge<GridNode>[] = graph.outgoingEdges(node);        
+        for (var edge of edges)
+        {
+
+        }
+
+    }    
+*/    
+    return graph.toString();
+}
 
 //////////////////////////////////////////////////////////////////////
 // here is an example graph
@@ -162,3 +214,5 @@ class GridGraph implements Graph<GridNode> {
         return str;
     }
 }
+
+console.log(testAStarSearch());
