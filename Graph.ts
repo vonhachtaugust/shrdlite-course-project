@@ -33,6 +33,24 @@ class SearchResult<Node> {
     cost : number;
 }
 
+class PathNodeCandidates<Node> {
+    /** List of possible path nodes. List of turples 
+    of the a node and it's corresponding f value */
+    list: [Node, number][];
+}
+
+function contains(node: Node, list: Node[]) : boolean
+{
+    if (node != null && list.length > 0) {
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].isEqualNode(node)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /**
 * A\* search implementation, parameterised by a `Node` type. The code
 * here is just a template; you should rewrite this function
@@ -54,26 +72,29 @@ function aStarSearch<Node>(
     goal: (n: Node) => boolean,
     heuristics: (n: Node) => number,
     timeout: number
-): SearchResult<Node> {
+    ): SearchResult<Node> {
+    /* 
+        The priority queue is the SearchResult<Node> list.
+    */
     var result: SearchResult<Node> = {
         path: [start],
         cost: 0
     };
 
-    /* 
-        Frontier: Priority queue ordered by f(p),
-        f(p) = cost(p) + h(p),
-        cost(p) = cost of the path p,
-        h(p) estimates the cost from the end of p to a goal.
+    /*
+        MEMORY: (not accually necessary... )
+        Almost constant list keeping track of the searced nodes 
+        and their corresponding f value, such that they are not 
+        needed to be recalculated for each new node search.
+        Almost because only whenever a new set of not previously 
+        seen nodes are found, they are added to the list.
     */
-
-    /* 
-        The priority queue is the SearchResult<Node> list,
-        latest added node is the node to examine f(p) for.
-    */
+    var searchList: PathNodeCandidates<Node> = {
+        list: []
+    };
 
     /*  
-        While prioQueue(n) != goal
+        While prioQueue(n) != goal || ! index++ without adding a node.
         For each node in the frontier, calculate f(p).
         Choose node with lowest f(p) and traverse its edge.
         (Handle if go back situation)
@@ -86,38 +107,91 @@ function aStarSearch<Node>(
         Cost function -> how is the cost number defined.
     */
 
-    //  Pseudo code:
+    //////////////////// Pseudo code: //////////////////////////
 
-    // Position in queue under consideration, i.e.
-    // result.path[p] return the Node under consideration
+    /*  
+        DEFINITION: Frontier.
+        The priority queue index p gives which node to examine next.
+        The nodes to consider next consist of not only the edges 
+        from the node under consideration, but also the nodes which 
+        got you TO the node under consideration and ITS connected 
+        nodes. (see slides for clarification.)
+     */
+
+    /*  
+        Position in queue under consideration, i.e.
+        result.path[p] return the Node under consideration
+    */
     let p = 0;
 
-    while (!goal(result.path[p]) || p > result.path.length)
-    {
-        // Obtain all edges from p to other nodes:
-        var edges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
+    /* 
+       SOLUTION FOR GOING BACK: Predecessor. 
+       Each node has a predecessor node so that if a path
+       turned out to be false and we need to return, we follow
+       the predecessor until we get to the "better" node.
+    */
 
-    // Check f for each node found at each edge
-    var f: number = 1000000; // other solution ...
-    var index: number = -1;
-    for (let i = 0; i < edges.length; i++) {
-        var node: Node = edges[i].to;
-        /*
-        // Calculate cost and heuristics: 
-        thisNodef = cost(node) + h(node);
-        if (thisNodef < f) 
+    /*
+        DEFINITION: Predecessors.
+        Node in SearchResult<Node> list with index smaller than
+        yours.
+        
+        DEFINTION: Predecessor to a node at index.
+        Node at index - 1.
+    */
+
+    // All outgoing edges from node[p], this (might) includes the
+    // node where we came from.
+    let outEdges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
+
+
+    // Add them to memory with their f value:
+    /*
+    for (let i = 0; i < outEdges.length; i++)
+    {
+        let node: Node = outEdges[i].to;
+
+        // Make sure we don't add node we came from twice:
+        if ( !contains(node, result.path)) 
         {
-            f = thisNodef;
-            index = i;
+            let f = 0; // cost(node) + h(node);
+            searchList.list.push([node, f]);
         }
-        */
+
     }
- 
-    // Add min f node:
-    result.path.push(edges[index].to);
-    // Add corresponding cost:
-    result.cost += edges[index].cost;
-}
+    */
+
+    // Pseudo example:
+    while (!goal(result.path[p]) || p > result.path.length - 1) 
+    {
+    // Obtain all edges from p to its connected nodes:
+    let edges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
+
+        if (edges.length > 0) 
+        {
+        // Calculate f for each connected node:
+        let fmin: number;
+        let index: number = -1;
+            for (let i = 0; i < edges.length; i++) 
+            {
+                let node: Node = edges[i].to;
+                    /*
+                    // Calculate cost plus heuristics: 
+                    f = cost(node) + h(node);
+                    if (f < fmin) 
+                    {
+                        fmin = f;
+                        index = i; // reference to node with smallest f.
+                    }
+                    */
+            }
+        // Add minimum f node unless :
+        result.path.push(edges[index].to);
+        // Add corresponding cost:
+        result.cost += edges[index].cost;
+        p++;
+        }    
+    }
     /*
         Example:
         A dummy search result: it just picks (three times)
@@ -134,42 +208,6 @@ function aStarSearch<Node>(
     return result;
 }
 
-function testAStarSearch(): Node {
-/*    var result: SearchResult<Node> = {
-        path: [],
-        cost: 0
-    };
-
-    var size: Coordinate = {x:10,y:10};
-    var obs: Coordinate[] = [{x:5,y:1},{x:5,y:2},{x:5,y:3},{x:5,y:4}];
-    var graph: GridGraph = new GridGraph(size, obs);    
-
-    var node: GridNode = new GridNode({ x: 5, y: 5 });
-    var n = 0;
-
-    while (n < 3)
-    {
-        var edges: Edge<GridNode>[] = graph.outgoingEdges(node);        
-        for (var edge of edges)
-        {
-            console.log(node.pos.x);
-        }
-        node.pos.x++;
-        n++;
-    }
-    */
-    var result : SearchResult<Node> = {
-        path: [],
-        cost: 0
-    };
-
-    var node: Node;
-
-    result.path.push(node);
-
-    return result.path[0];
-}
-
 //////////////////////////////////////////////////////////////////////
 // here is an example graph
 
@@ -182,7 +220,7 @@ interface Coordinate {
 class GridNode {
     constructor(
         public pos : Coordinate
-    ) {}
+        ) {}
 
     add(delta : Coordinate) : GridNode {
         return new GridNode({
@@ -207,7 +245,7 @@ class GridGraph implements Graph<GridNode> {
     constructor(
         public size : Coordinate,
         obstacles : Coordinate[]
-    ) {
+        ) {
         this.walls = new collections.Set<GridNode>();
         for (var pos of obstacles) {
             this.walls.add(new GridNode(pos));
@@ -261,5 +299,3 @@ class GridGraph implements Graph<GridNode> {
         return str;
     }
 }
-
-console.log(testAStarSearch());
