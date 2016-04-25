@@ -33,6 +33,58 @@ class SearchResult<Node> {
     cost : number;
 }
 
+class NodeMap<Node> {
+    node : Node;
+    map : any;
+}
+
+class NodeTable<Node> {
+  nodes : NodeMap<Node>[];
+  constructor(
+      public defaultMap : any
+  ) {}
+  IsEmpty() : boolean {
+    return (nodes.length == 0);
+  }
+  GetFVal(node : Node) : any {
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].node == node) {
+        return this.nodes[i].map;
+      }
+    }
+    // node has not been inserted, return default value
+    return this.defaultMap;
+  }
+  Insert(node : Node, fVal : number) {
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i].node == node) {
+        this.nodes[i].map = fVal;
+        return;
+      }
+    }
+    this.nodes.push({
+      node: node,
+      map: fVal
+    });
+  }
+  Member(node : Node) : boolean {
+    return (this.GetFVal(node) != undefined);
+  }
+  GetArgMinAmong(feasibleSet : Node[]) : Node {
+    let minFNode : Node;
+    let minF : number;
+    for (let i = 0; i < feasibleSet.length; i++) {
+      let thisNode = feasibleSet[i];
+      let thisNodeFVal = this.GetFVal(thisNode);
+      if (minF == null || thisNodeFVal < minF) {
+        minFNode = thisNode;
+        minF = thisNodeFVal;
+      }
+    }
+    return minFNode;
+  }
+}
+
 /**
 * A\* search implementation, parameterised by a `Node` type. The code
 * here is just a template; you should rewrite this function
@@ -55,56 +107,45 @@ function aStarSearch<Node>(
     heuristics: (n: Node) => number,
     timeout: number
     ): SearchResult<Node> {
-    /* 
-        The priority queue is the SearchResult<Node> list.
-    */
-    var result: SearchResult<Node> = {
+    // A dummy search result: it just picks the first possible neighbour
+    var result : SearchResult<Node> = {
         path: [start],
         cost: 0
     };
-
-    //////////////////// Pseudo code: //////////////////////////
-
-    /*  
-        DEFINITION: Frontier.
-        The priority queue index p gives which node to examine next.
-        The nodes to consider next consist of not only the edges 
-        from the node under consideration, but also the nodes which 
-        got you TO the node under consideration and ITS connected 
-        nodes. (see slides for clarification.)
-     */
-
-    /*  
-        Position in queue under consideration, i.e.
-        result.path[p] return the Node under consideration
-    */
-    let p = 0;
-
-    /* 
-        Predecessor: Go fram goal until at start.
-        DEFINTION: Predecessor to a node at index.
-        Node at index - 1.
-    */
-
-    // All outgoing edges from node[p], this (might) includes the
-    // node where we came from.
-    let outEdges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
-
-
-       /*
-        Example:
-        A dummy search result: it just picks (three times)
-        the first possible neighbour.
     
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+    let closedSet : Node[] = [];
+    let openSet : Node[] = [start];
+    
+    let gScore : NodeTable<Node> = new NodeTable<Node>(Infinity);
+    gScore.Insert(start,0);
+    
+    let fScore : NodeTable<Node> = new NodeTable<Node>(Infinity);
+    fScore.Insert(start,heuristics(start));
+    
+    let cameFrom : NodeTable<Node> = new NodeTable<Node>(undefined);
+    
+    while (openSet.length > 0) {
+      let current = fScore.GetArgMinAmong(openSet);
+      if (goal(current)) {
+        return reconstructPath(cameFrom,current);
+      }
+      
+      var edge : Edge<Node> = graph.outgoingEdges(start) [0];
+      if (! edge) break;
+      start = edge.to;
+      result.path.push(start);
+      result.cost += edge.cost;
     }
-    */
     return result;
+}
+
+/**
+ * function for reconstructing the best path from start to goal
+ * @param cameFrom table mapping nodes to the predecessors
+ * @param current the node from which to begin generating path backwards
+ */
+function reconstructPath(cameFrom : NodeTable<Node>, current : Node) {
+  return [];
 }
 
 //////////////////////////////////////////////////////////////////////
