@@ -33,24 +33,6 @@ class SearchResult<Node> {
     cost : number;
 }
 
-class PathNodeCandidates<Node> {
-    /** List of possible path nodes. List of turples 
-    of the a node and it's corresponding f value */
-    list: [Node, number][];
-}
-
-function contains(node: Node, list: Node[]) : boolean
-{
-    if (node != null && list.length > 0) {
-        for (let i = 0; i < list.length; i++) {
-            if (list[i].isEqualNode(node)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 /**
 * A\* search implementation, parameterised by a `Node` type. The code
 * here is just a template; you should rewrite this function
@@ -81,32 +63,6 @@ function aStarSearch<Node>(
         cost: 0
     };
 
-    /*
-        MEMORY: (not accually necessary... )
-        Almost constant list keeping track of the searced nodes 
-        and their corresponding f value, such that they are not 
-        needed to be recalculated for each new node search.
-        Almost because only whenever a new set of not previously 
-        seen nodes are found, they are added to the list.
-    */
-    var searchList: PathNodeCandidates<Node> = {
-        list: []
-    };
-
-    /*  
-        While prioQueue(n) != goal || ! index++ without adding a node.
-        For each node in the frontier, calculate f(p).
-        Choose node with lowest f(p) and traverse its edge.
-        (Handle if go back situation)
-        repeat.
-    */
-
-    /*
-        What's missing? 
-        Heuristic function -> how is the heuristics defined.
-        Cost function -> how is the cost number defined.
-    */
-
     //////////////////// Pseudo code: //////////////////////////
 
     /*  
@@ -125,17 +81,7 @@ function aStarSearch<Node>(
     let p = 0;
 
     /* 
-       SOLUTION FOR GOING BACK: Predecessor. 
-       Each node has a predecessor node so that if a path
-       turned out to be false and we need to return, we follow
-       the predecessor until we get to the "better" node.
-    */
-
-    /*
-        DEFINITION: Predecessors.
-        Node in SearchResult<Node> list with index smaller than
-        yours.
-        
+        Predecessor: Go fram goal until at start.
         DEFINTION: Predecessor to a node at index.
         Node at index - 1.
     */
@@ -145,54 +91,7 @@ function aStarSearch<Node>(
     let outEdges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
 
 
-    // Add them to memory with their f value:
-    /*
-    for (let i = 0; i < outEdges.length; i++)
-    {
-        let node: Node = outEdges[i].to;
-
-        // Make sure we don't add node we came from twice:
-        if ( !contains(node, result.path)) 
-        {
-            let f = 0; // cost(node) + h(node);
-            searchList.list.push([node, f]);
-        }
-
-    }
-    */
-
-    // Pseudo example:
-    while (!goal(result.path[p]) || p > result.path.length - 1) 
-    {
-    // Obtain all edges from p to its connected nodes:
-    let edges: Edge<Node>[] = graph.outgoingEdges(result.path[p]);
-
-        if (edges.length > 0) 
-        {
-        // Calculate f for each connected node:
-        let fmin: number;
-        let index: number = -1;
-            for (let i = 0; i < edges.length; i++) 
-            {
-                let node: Node = edges[i].to;
-                    /*
-                    // Calculate cost plus heuristics: 
-                    f = cost(node) + h(node);
-                    if (f < fmin) 
-                    {
-                        fmin = f;
-                        index = i; // reference to node with smallest f.
-                    }
-                    */
-            }
-        // Add minimum f node unless :
-        result.path.push(edges[index].to);
-        // Add corresponding cost:
-        result.cost += edges[index].cost;
-        p++;
-        }    
-    }
-    /*
+       /*
         Example:
         A dummy search result: it just picks (three times)
         the first possible neighbour.
