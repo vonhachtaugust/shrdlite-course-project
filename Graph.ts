@@ -49,7 +49,9 @@ class NodeTable<Node> {
   nodes : NodeMap<Node>[];
   constructor(
       public defaultMap : any
-  ) {}
+  ) {
+    this.nodes = [];
+  }
   
   IsEmpty() : boolean {
     return (this.nodes.length == 0);
