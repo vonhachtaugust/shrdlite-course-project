@@ -127,15 +127,18 @@ function aStarSearch<Node>(
     let fScore : NodeTable<Node> = new NodeTable<Node>(Infinity);
     fScore.Insert(start,heuristics(start));
     
-    let cameFrom : NodeTable<Node> = new NodeTable<Node>(undefined);
+    let cameFrom: NodeTable<Node> = new NodeTable<Node>(undefined);
     
     while (openSet.length > 0) {
       let current = fScore.GetArgMinAmong(openSet);
       if (goal(current)) {
-        result = reconstructPath(cameFrom,current,start);
-        break;
+            result = reconstructPath( 
+                cameFrom, 
+                current, 
+                start);
+            break;    
       }
-      
+
       // Add current to open set
       openSet.push(current);
       // Remove current from closed set
@@ -178,7 +181,7 @@ function aStarSearch<Node>(
  * @param cameFrom table mapping nodes to the predecessors
  * @param current the node from which to begin generating path backwards
  */
-function reconstructPath(cameFrom : NodeTable<Node>, current : Node, start : Node) : SearchResult<Node> {
+function reconstructPath(cameFrom: any, current : any, start : any) : any {
     let total_path: SearchResult<Node> = {path:[current],cost:0};
 
     /**
