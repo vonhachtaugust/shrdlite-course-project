@@ -141,10 +141,10 @@ function aStarSearch<Node>(
             break;    
       }
 
-      // Add current to open set
-      openSet.push(current);
-      // Remove current from closed set
-      closedSet.splice(closedSet.indexOf(current),1);
+      // Remove current from open set
+      openSet.splice(openSet.indexOf(current),1);
+      // Add current to closed set
+      closedSet.push(current);
       
       let currentNeighbourEdges : Edge<Node>[] = graph.outgoingEdges(current);
       
