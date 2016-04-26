@@ -33,18 +33,25 @@ class SearchResult<Node> {
     cost : number;
 }
 
+/**
+ * 
+ */
 class NodeMap<Node> {
     node : Node;
     map : any;
 }
 
+/**
+ * Structure for mapping nodes to values, search as numbers or
+ * other nodes.
+ */
 class NodeTable<Node> {
   nodes : NodeMap<Node>[];
   constructor(
       public defaultMap : any
   ) {}
   IsEmpty() : boolean {
-    return (nodes.length == 0);
+    return (this.nodes.length == 0);
   }
   GetFVal(node : Node) : any {
     for (let i = 0; i < this.nodes.length; i++) {
@@ -55,7 +62,7 @@ class NodeTable<Node> {
     // node has not been inserted, return default value
     return this.defaultMap;
   }
-  Insert(node : Node, fVal : number) {
+  Insert(node : Node, fVal : any) {
     for (let i = 0; i < this.nodes.length; i++) {
       if (this.nodes[i].node == node) {
         this.nodes[i].map = fVal;
@@ -70,6 +77,7 @@ class NodeTable<Node> {
   Member(node : Node) : boolean {
     return (this.GetFVal(node) != undefined);
   }
+  // This function works only if the map is a number
   GetArgMinAmong(feasibleSet : Node[]) : Node {
     let minFNode : Node;
     let minF : number;
@@ -86,13 +94,8 @@ class NodeTable<Node> {
 }
 
 /**
-* A\* search implementation, parameterised by a `Node` type. The code
-* here is just a template; you should rewrite this function
-* entirely. In this template, the code produces a dummy search result
-* which just picks the first possible neighbour.
+* A\* search implementation, parameterised by a `Node` type.
 *
-* Note that you should not change the API (type) of this function,
-* only its body.
 * @param graph The graph on which to perform A\* search.
 * @param start The initial node.
 * @param goal A function that returns true when given a goal node. Used to determine if the algorithm has reached the goal.
@@ -108,10 +111,7 @@ function aStarSearch<Node>(
     timeout: number
     ): SearchResult<Node> {
     // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    };
+    var result : SearchResult<Node>;
     
     let closedSet : Node[] = [];
     let openSet : Node[] = [start];
@@ -127,15 +127,44 @@ function aStarSearch<Node>(
     while (openSet.length > 0) {
       let current = fScore.GetArgMinAmong(openSet);
       if (goal(current)) {
-        return reconstructPath(cameFrom,current);
+        result = reconstructPath(cameFrom,current);
+        break;
       }
       
-      var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-      if (! edge) break;
-      start = edge.to;
-      result.path.push(start);
-      result.cost += edge.cost;
+      // Add current to open set
+      openSet.push(current);
+      // Remove current from closed set
+      closedSet.splice(closedSet.indexOf(current),1);
+      
+      let currentNeighbourEdges : Edge<Node>[] = graph.outgoingEdges(current);
+      
+      // For each neighbour
+      for (let i = 0; i < currentNeighbourEdges.length; i++) {
+        let thisEdge : Edge<Node> = currentNeighbourEdges[i];
+        let thisNeighbour = thisEdge.to;
+        
+        // If this neighbour is in closed set, then skip
+        if (closedSet.indexOf(thisNeighbour) > -1) {
+          continue;
+        }
+        
+        // The cost from start to this neighbour
+        let tentative_gScore = gScore.GetFVal(current) + thisEdge.cost;
+        
+        if (openSet.indexOf(thisNeighbour) == -1) {
+          // This neighbour has not yet been encountered
+          openSet.push(thisNeighbour);
+        } else if (tentative_gScore >= gScore.GetFVal(thisNeighbour)) {
+          // This path is more costly
+          continue;
+        }
+        
+        cameFrom.Insert(thisNeighbour,current);
+        gScore.Insert(thisNeighbour,tentative_gScore);
+        fScore.Insert(thisNeighbour,fScore.GetFVal(thisNeighbour))
+      }
     }
+    // if no path exists, result is undefined
     return result;
 }
 
@@ -144,8 +173,8 @@ function aStarSearch<Node>(
  * @param cameFrom table mapping nodes to the predecessors
  * @param current the node from which to begin generating path backwards
  */
-function reconstructPath(cameFrom : NodeTable<Node>, current : Node) {
-  return [];
+function reconstructPath(cameFrom : NodeTable<Node>, current : Node) : SearchResult<Node> {
+  return {path:[],cost:0};
 }
 
 //////////////////////////////////////////////////////////////////////
