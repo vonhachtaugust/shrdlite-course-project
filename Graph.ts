@@ -132,8 +132,10 @@ function aStarSearch<Node>(
     let cameFrom: NodeTable<Node> = new NodeTable<Node>(undefined);
     
     while (openSet.length > 0) {
-      console.log("Openset: " + openSet.length);
+      //console.log("Openset: " + openSet.length);
       let current = fScore.GetArgMinAmong(openSet);
+      // console.log("openSet = " + openSet + "\n\n\n\n");
+
       if (goal(current)) {
           result = reconstructPath(
               cameFrom,
@@ -145,7 +147,15 @@ function aStarSearch<Node>(
       }
 
       // Remove current from open set
+      // console.log("Before splice = " + openSet.length);
       openSet.splice(openSet.indexOf(current),1);
+      // console.log("After splice = " + openSet.length + "\n");
+
+      for (let i = 0; i < 1000000000; i++)
+      {
+        ;
+      }
+      //console.log("IndexOf = " + openSet.indexOf(current));
       // Add current to closed set
       closedSet.push(current);
       
@@ -164,13 +174,22 @@ function aStarSearch<Node>(
         // The cost from start to this neighbour
         let tentative_gScore = gScore.GetFVal(current) + thisEdge.cost;
         
+        console.log("Current node = " + current);
+        console.log("Neighbor = " + thisNeighbour);
+        console.log("Openset = " + openSet);
+        console.log("Index of neighbor? : " + openSet.indexOf(thisNeighbour));
+        console.log();
+        
+
         if (openSet.indexOf(thisNeighbour) == -1) {
           // This neighbour has not yet been encountered
+          // console.log("Before push : " + openSet);
           openSet.push(thisNeighbour);
+          // console.log("After a push : " + openSet);
         } else if (tentative_gScore >= gScore.GetFVal(thisNeighbour)) {
           // This path is more costly
           continue;
-        }
+        } 
         
         cameFrom.Insert(thisNeighbour,current);
         gScore.Insert(thisNeighbour,tentative_gScore);
