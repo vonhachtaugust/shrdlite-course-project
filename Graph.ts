@@ -105,7 +105,7 @@ class NodeTable<Node> {
  * The order of the data fields needs to be in the same order
  * in order for nodes to be equal
  */
-function equal(ns : Node[]) : boolean {
+function equal<Node>(ns : Node[]): boolean {
   let res : boolean = true;
   for (let i = 1; i < ns.length; i++) {
     res = res && (JSON.stringify(ns[i-1]) == JSON.stringify(ns[i]));
@@ -116,7 +116,7 @@ function equal(ns : Node[]) : boolean {
 /**
  * Function for checking if a list contains a node
  */
-function contains(n, ns) : boolean {
+function contains<Node>(n: Node, ns: Node[] ): boolean {
   for (let i = 0; i < ns.length; i++) {
     if (equal([n,ns[i]])) return true;
   }
@@ -160,6 +160,7 @@ function aStarSearch<Node>(
       // console.log("openSet = " + openSet + "\n\n\n\n");
 
       if (goal(current)) {
+          console.log("DONE! :D");
           result = reconstructPath(
               cameFrom,
               current,
@@ -174,10 +175,6 @@ function aStarSearch<Node>(
       openSet.splice(openSet.indexOf(current),1);
       // console.log("After splice = " + openSet.length + "\n");
 
-      for (let i = 0; i < 1000000000; i++)
-      {
-        ;
-      }
       //console.log("IndexOf = " + openSet.indexOf(current));
       // Add current to closed set
       closedSet.push(current);
@@ -197,14 +194,14 @@ function aStarSearch<Node>(
         // The cost from start to this neighbour
         let tentative_gScore = gScore.GetFVal(current) + thisEdge.cost;
         
-        console.log("Current node = " + current);
-        console.log("Neighbor = " + thisNeighbour);
-        console.log("Openset = " + openSet);
-        console.log("Index of neighbor? : " + openSet.indexOf(thisNeighbour));
-        console.log();
+        //console.log("Current node = " + current);
+        //console.log("Neighbor = " + thisNeighbour);
+        //console.log("Openset = " + openSet);
+        //console.log("Index of neighbor? : " + openSet.indexOf(thisNeighbour));
+        //console.log();
         
 
-        if (contains(thisNeighbour,openSet)) {
+        if (!contains(thisNeighbour,openSet)) {
           // This neighbour has not yet been encountered
           // console.log("Before push : " + openSet);
           openSet.push(thisNeighbour);
@@ -220,6 +217,7 @@ function aStarSearch<Node>(
       }
     }
     // if no path exists, result is undefined
+    console.log("NO PATH COULD BE FOUND :(");
     return result;
 }
 
@@ -234,11 +232,15 @@ function reconstructPath<Node>(cameFrom: NodeTable<Node>, current : Node, start 
     /**
     *    Predecessor path from goal to start:
     */
+    
+    console.log("Path :" + total_path.path);
+
     while  (current != start) {
         current = cameFrom.GetFVal(current);
         total_path.path.push(current);
     }
-1
+
+
     /**
     *    Reverse path:
     */
