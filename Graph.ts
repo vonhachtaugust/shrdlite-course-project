@@ -101,6 +101,29 @@ class NodeTable<Node> {
 }
 
 /**
+ * Function for checking if all the nodes in a list are equal.
+ * The order of the data fields needs to be in the same order
+ * in order for nodes to be equal
+ */
+function equal(ns : Node[]) : boolean {
+  let res : boolean = true;
+  for (let i = 1; i < ns.length; i++) {
+    res = res && (JSON.stringify(ns[i-1]) == JSON.stringify(ns[i]));
+  }
+  return res;
+}
+
+/**
+ * Function for checking if a list contains a node
+ */
+function contains(n, ns) : boolean {
+  for (let i = 0; i < ns.length; i++) {
+    if (equal([n,ns[i]])) return true;
+  }
+  return false;
+}
+
+/**
 * A\* search implementation, parameterised by a `Node` type.
 *
 * @param graph The graph on which to perform A\* search.
@@ -181,7 +204,7 @@ function aStarSearch<Node>(
         console.log();
         
 
-        if (openSet.indexOf(thisNeighbour) == -1) {
+        if (contains(thisNeighbour,openSet)) {
           // This neighbour has not yet been encountered
           // console.log("Before push : " + openSet);
           openSet.push(thisNeighbour);
