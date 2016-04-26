@@ -49,11 +49,11 @@ class NodeTable<Node> {
   nodes : NodeMap<Node>[];
   constructor(
       public defaultMap : any
-  ) {
+  ) { 
     this.nodes = [];
   }
-  
-  IsEmpty() : boolean {
+
+  IsEmpty(): boolean {
     return (this.nodes.length == 0);
   }
 
@@ -132,12 +132,15 @@ function aStarSearch<Node>(
     let cameFrom: NodeTable<Node> = new NodeTable<Node>(undefined);
     
     while (openSet.length > 0) {
+      console.log("Openset: " + openSet.length);
       let current = fScore.GetArgMinAmong(openSet);
       if (goal(current)) {
-            result = reconstructPath( 
-                cameFrom, 
-                current, 
-                start);
+          result = reconstructPath(
+              cameFrom,
+              current,
+              start,
+              fScore.GetFVal(current)
+                );
             break;    
       }
 
@@ -183,18 +186,17 @@ function aStarSearch<Node>(
  * @param cameFrom table mapping nodes to the predecessors
  * @param current the node from which to begin generating path backwards
  */
-function reconstructPath<Node>(cameFrom: NodeTable<Node>, current : Node, start : Node) : SearchResult<Node> {
-    let total_path: SearchResult<Node> = {path:[current],cost:0};
+function reconstructPath<Node>(cameFrom: NodeTable<Node>, current : Node, start : Node, totalCost: number): SearchResult<Node> {
+    let total_path: SearchResult<Node> = {path:[current],cost:totalCost};
 
     /**
     *    Predecessor path from goal to start:
     */
-    while  (current  != start) {
+    while  (current != start) {
         current = cameFrom.GetFVal(current);
         total_path.path.push(current);
-        total_path.cost += cameFrom.GetFVal(current);
     }
-
+1
     /**
     *    Reverse path:
     */
