@@ -50,9 +50,11 @@ class NodeTable<Node> {
   constructor(
       public defaultMap : any
   ) {}
+  
   IsEmpty() : boolean {
     return (this.nodes.length == 0);
   }
+
   GetFVal(node : Node) : any {
     for (let i = 0; i < this.nodes.length; i++) {
       if (this.nodes[i].node == node) {
@@ -62,6 +64,7 @@ class NodeTable<Node> {
     // node has not been inserted, return default value
     return this.defaultMap;
   }
+
   Insert(node : Node, fVal : any) {
     for (let i = 0; i < this.nodes.length; i++) {
       if (this.nodes[i].node == node) {
@@ -74,10 +77,12 @@ class NodeTable<Node> {
       map: fVal
     });
   }
+
   Member(node : Node) : boolean {
     return (this.GetFVal(node) != undefined);
   }
   // This function works only if the map is a number
+
   GetArgMinAmong(feasibleSet : Node[]) : Node {
     let minFNode : Node;
     let minF : number;
@@ -127,7 +132,7 @@ function aStarSearch<Node>(
     while (openSet.length > 0) {
       let current = fScore.GetArgMinAmong(openSet);
       if (goal(current)) {
-        result = reconstructPath(cameFrom,current);
+        result = reconstructPath(cameFrom,current,start);
         break;
       }
       
@@ -173,8 +178,24 @@ function aStarSearch<Node>(
  * @param cameFrom table mapping nodes to the predecessors
  * @param current the node from which to begin generating path backwards
  */
-function reconstructPath(cameFrom : NodeTable<Node>, current : Node) : SearchResult<Node> {
-  return {path:[],cost:0};
+function reconstructPath(cameFrom : NodeTable<Node>, current : Node, start : Node) : SearchResult<Node> {
+    let total_path: SearchResult<Node> = {path:[current],cost:0};
+
+    /**
+    *    Predecessor path from goal to start:
+    */
+    while  (current  != start) {
+        current = cameFrom.GetFVal(current);
+        total_path.path.push(current);
+        total_path.cost += cameFrom.GetFVal(current);
+    }
+
+    /**
+    *    Reverse path:
+    */
+    total_path.path.reverse();
+
+    return total_path;
 }
 
 //////////////////////////////////////////////////////////////////////
