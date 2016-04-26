@@ -181,7 +181,7 @@ function aStarSearch<Node>(
  * @param cameFrom table mapping nodes to the predecessors
  * @param current the node from which to begin generating path backwards
  */
-function reconstructPath(cameFrom: any, current : any, start : any) : any {
+function reconstructPath<Node>(cameFrom: NodeTable<Node>, current : Node, start : Node) : SearchResult<Node> {
     let total_path: SearchResult<Node> = {path:[current],cost:0};
 
     /**
