@@ -113,6 +113,7 @@ function equal<Node>(ns : Node[]): boolean {
   return res;
 }
 
+
 /**
  * Function for checking if a list contains a node
  */
@@ -140,7 +141,6 @@ function aStarSearch<Node>(
     heuristics: (n: Node) => number,
     timeout: number
     ): SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
     var result : SearchResult<Node>;
     
     let closedSet : Node[] = [];
@@ -150,17 +150,14 @@ function aStarSearch<Node>(
     gScore.Insert(start,0);
     
     let fScore : NodeTable<Node> = new NodeTable<Node>(Infinity);
-    fScore.Insert(start,heuristics(start));
+    fScore.Insert(start, heuristics(start));
     
     let cameFrom: NodeTable<Node> = new NodeTable<Node>(undefined);
     
     while (openSet.length > 0) {
-      //console.log("Openset: " + openSet.length);
       let current = fScore.GetArgMinAmong(openSet);
-      // console.log("openSet = " + openSet + "\n\n\n\n");
 
       if (goal(current)) {
-          console.log("DONE! :D");
           result = reconstructPath(
               cameFrom,
               current,
@@ -171,11 +168,7 @@ function aStarSearch<Node>(
       }
 
       // Remove current from open set
-      // console.log("Before splice = " + openSet.length);
       openSet.splice(openSet.indexOf(current),1);
-      // console.log("After splice = " + openSet.length + "\n");
-
-      //console.log("IndexOf = " + openSet.indexOf(current));
       // Add current to closed set
       closedSet.push(current);
       
@@ -194,30 +187,20 @@ function aStarSearch<Node>(
         // The cost from start to this neighbour
         let tentative_gScore = gScore.GetFVal(current) + thisEdge.cost;
         
-        //console.log("Current node = " + current);
-        //console.log("Neighbor = " + thisNeighbour);
-        //console.log("Openset = " + openSet);
-        //console.log("Index of neighbor? : " + openSet.indexOf(thisNeighbour));
-        //console.log();
-        
-
         if (!contains(thisNeighbour,openSet)) {
           // This neighbour has not yet been encountered
-          // console.log("Before push : " + openSet);
           openSet.push(thisNeighbour);
-          // console.log("After a push : " + openSet);
         } else if (tentative_gScore >= gScore.GetFVal(thisNeighbour)) {
           // This path is more costly
           continue;
         } 
         
-        cameFrom.Insert(thisNeighbour,current);
+        cameFrom.Insert(thisNeighbour, current);
         gScore.Insert(thisNeighbour,tentative_gScore);
-        fScore.Insert(thisNeighbour,fScore.GetFVal(thisNeighbour))
+        fScore.Insert(thisNeighbour, tentative_gScore + heuristics(thisNeighbour));
       }
     }
     // if no path exists, result is undefined
-    console.log("NO PATH COULD BE FOUND :(");
     return result;
 }
 
@@ -229,23 +212,15 @@ function aStarSearch<Node>(
 function reconstructPath<Node>(cameFrom: NodeTable<Node>, current : Node, start : Node, totalCost: number): SearchResult<Node> {
     let total_path: SearchResult<Node> = {path:[current],cost:totalCost};
 
-    /**
-    *    Predecessor path from goal to start:
-    */
-    
-    console.log("Path :" + total_path.path);
-
+    // Predecessor path from goal to start:
     while  (current != start) {
         current = cameFrom.GetFVal(current);
         total_path.path.push(current);
     }
-
-
-    /**
-    *    Reverse path:
-    */
+    // Remove start from list:
+    total_path.path.splice(total_path.path.length - 1, 1);
+    
     total_path.path.reverse();
-
     return total_path;
 }
 
