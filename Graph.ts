@@ -53,10 +53,6 @@ class NodeTable<Node> {
     this.nodes = [];
   }
 
-  IsEmpty(): boolean {
-    return (this.nodes.length == 0);
-  }
-
   GetFVal(node : Node) : any {
     for (let i = 0; i < this.nodes.length; i++) {
       if (this.nodes[i].node == node) {
@@ -80,11 +76,7 @@ class NodeTable<Node> {
     });
   }
 
-  Member(node : Node) : boolean {
-    return (this.GetFVal(node) != undefined);
-  }
   // This function works only if the map is a number
-
   GetArgMinAmong(feasibleSet : Node[]) : Node {
     let minFNode : Node;
     let minF : number;
