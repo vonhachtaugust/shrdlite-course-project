@@ -107,13 +107,48 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
+        var stateStacks : string[] = Array.prototype.concat.apply([], state.stacks);
+        var stateObjects : string[] = Array.prototype.concat.apply([], state.objects);
+        var cmdObjects : string[] = Array.prototype.concat.apply([], cmd.entity.object);
+        var a: string = stateStacks[2 * stateStacks.length];                  
+        var tempCmdObj = cmd.entity.object;
+        var entityLocation;
+        if (tempCmdObj.location != null) {
+            tempCmdObj = tempCmdObj.object;
+            entityLocation = tempCmdObj.location;
+        }
+        var tempStateObj = state.objects;
+        var aTemp : any[] = [];
+        //var object;
+        console.log("============================================================");
+        for (let key in state.objects) {
+
+            if ((tempCmdObj.size==null)||(tempCmdObj.size == tempStateObj[key].size)){
+                if ((tempCmdObj.color == null) || (tempCmdObj.color == tempStateObj[key].color)){
+                    if ((tempCmdObj.form == null) || (tempCmdObj.form == tempStateObj[key].form)){
+                        aTemp.push(tempStateObj[key]);
+                    }
+                }
+            }
+        }
+
+         console.log("ATEMP:",aTemp);  
+
         var interpretation : DNFFormula = [[
             {polarity: true, relation: "ontop", args: [a, "floor"]},
             {polarity: true, relation: "holding", args: [b]}
         ]];
+       
+        console.log(JSON.stringify(cmd));
+        console.log(state);
+        
+       // console.log("-------------------------------TEST---------------------");
+        //console.log("test", tempStateObj);
+        //console.log("stateStacks",state.objects['a'].color);
+        //console.log("=============================================================");
+        
+        var b: string = stateStacks[Math.floor(Math.random() * stateStacks.length)];
+
         return interpretation;
     }
 
