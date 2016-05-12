@@ -273,5 +273,79 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         
         return result;
     }
+    
+    // returns the index of 'thisPossibleTargetTag' in it's respective stack
+    function stackIndexOf(thisPossibleTargetTag : string, state : WorldState) : number {
+        let stacks : string[][] = state.stacks;
+        for (let i = 0; i < stacks.length; i++) {
+            let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);
+            if (stackIndexOf > -1) return stackIndexOf;
+        }
+        return -1;
+    }
+    
+    // returns the stack index of 'thisPossibleTargetTag'
+    function stackIndex(thisPossibleTargetTag : string, state : WorldState) : number {
+        let stacks : string[][] = state.stacks;
+        for (let i = 0; i < stacks.length; i++) {
+            let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);
+            if (stackIndexOf > -1) return i;
+        }
+        return -1;
+    }
+    
+    // returns true if 'thisPossibleTargetTag' and 'thisRelativeTag' are in the same stack
+    function isInSameStack(thisPossibleTargetTag : string,
+                           thisRelativeTag : string,
+                           state : WorldState) : boolean {
+        let stackIndexTarget : number = stackIndex(thisPossibleTargetTag,state);
+        let stackIndexRelative : number = stackIndex(thisRelativeTag,state);
+        return (stackIndexTarget > -1) && (stackIndexTarget == stackIndexRelative);
+    }
+    
+    // returns list of objects in 'stateObjects' matching 'targetObject' w.r.t the following features
+    let matchFeatures = ["size","color","form"];
+    function filterFeatures(targetObject,state : WorldState) : string[] {
+        
+        // return value
+        var result : any[] = [];
+        
+        let stateObjects = state.objects;
+        
+        for (let objTag in stateObjects) {
+            if (stackIndex(objTag,state) == -1) continue;
+            let objectMatch : boolean = true;
+            for (let i = 0; i < matchFeatures.length; i++) {
+                let feature = matchFeatures[i];
+                if (targetObject[feature] == null || targetObject[feature] == "anyform") continue;
+                if (targetObject[feature] != stateObjects[objTag][feature]) {
+                    objectMatch = false;
+                    break;
+                }
+            }
+            if (objectMatch) result.push(objTag);
+        }
+        return result;
+    }
+    
+    // calculate the cartesian product of lists
+    function cartesianProd(l1, l2) {
+        let arg = [l1, l2];
+        let max = arg.length-1;
+        let r = [];
+        function helper(arr, i) {
+            for (var j=0, l=arg[i].length; j<l; j++)
+            {
+                var a = arr.slice(0); // clone arr
+                a.push(arg[i][j]);
+                if (i==max)
+                    r.push(a);
+                else
+                    helper(a, i+1);
+            }
+        }
+        helper([], 0);
+        return r;
+    }
 }
 
