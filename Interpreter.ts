@@ -105,52 +105,173 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
-    function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
+function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-        var stateStacks : string[] = Array.prototype.concat.apply([], state.stacks);
-        var stateObjects : string[] = Array.prototype.concat.apply([], state.objects);
-        var cmdObjects : string[] = Array.prototype.concat.apply([], cmd.entity.object);
-        var a: string = stateStacks[2 * stateStacks.length];                  
-        var tempCmdObj = cmd.entity.object;
-        var entityLocation;
-        if (tempCmdObj.location != null) {
-            tempCmdObj = tempCmdObj.object;
-            entityLocation = tempCmdObj.location;
+        var tags : string[] = Array.prototype.concat.apply([], state.stacks);
+        var a: string = tags[Math.floor(Math.random() * tags.length)];
+        var b: string = tags[Math.floor(Math.random() * tags.length)];
+        
+        let command = cmd.command;
+        
+        let interpretation : DNFFormula = [];
+        
+        if (command == "take") {
+            let targetEntity = cmd.entity;
+            let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
+            console.log("possibleTargetTags: " + possibleTargetTags)
+            
+            for (let i = 0; i < possibleTargetTags.length; i++) {
+                let possibleTargetTag = possibleTargetTags[i];
+                interpretation.push(
+                    [{polarity: true, relation: "holding", args: [possibleTargetTag]}]
+                );
+            }
+        } else if (command == "move") {
+            
+            // target
+            let targetEntity = cmd.entity;
+            let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
+            console.log("possibleTargetTags: " + possibleTargetTags)
+            
+            // relative
+            let relativeEntity = cmd.location.entity;
+            let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
+            console.log("possibleRelativeTags: " + possibleRelativeTags)
+            
+            let combs = cartesianProd(possibleTargetTags,possibleRelativeTags);
+            combs = assertPhysicalLaws(combs,cmd.location.relation,state);
+            console.log("combs: " + combs);
+            
+            for (let i = 0; i < combs.length; i++) {
+                let comb = combs[i];
+                console.log("comb[0]: " + comb[0]);
+                console.log("comb[1]: " + comb[1]);
+                console.log("relation: " + cmd.location.relation);
+                interpretation.push(
+                    [{polarity: true, relation: cmd.location.relation, args: [comb[0][0],comb[1][0]]}]
+                );
+            }
         }
-        var tempStateObj = state.objects;
-        var aTemp : any[] = [];
-        //var object;
-        console.log("============================================================");
-        for (let key in state.objects) {
-
-            if ((tempCmdObj.size==null)||(tempCmdObj.size == tempStateObj[key].size)){
-                if ((tempCmdObj.color == null) || (tempCmdObj.color == tempStateObj[key].color)){
-                    if ((tempCmdObj.form == null) || (tempCmdObj.form == tempStateObj[key].form)){
-                        aTemp.push(tempStateObj[key]);
+        console.log(interpretation.length);
+        if (interpretation.length == 0) return undefined;
+        return interpretation;
+    }
+    
+    function assertPhysicalLaws(combs,relation,state) {
+        
+        // return value
+        let result = [];
+        
+        for (let i = 0; i < combs.length; i++) {
+            let targetTag = combs[i][0];
+            let relativeTag = combs[i][1];
+            
+            let target = state.objects[targetTag];
+            let relative = state.objects[relativeTag];
+            
+            if (targetTag != relativeTag) {
+                if (relation == "inside") {
+                    if (!(target.size == "large" && relative.size == "small")) {
+                        if (!((target.form == "pyramid" || target.form == "plank" || target.form == "box") && target.size == relative.size)) {
+                            if (!(target.size == "large" && relative.size == "small")
+                                && relative.form == "box") {
+                                result.push(combs[i]);
+                            }
+                        }
+                    }
+                } else if (relation == "ontop") {
+                    if (!(target.size == "large" && relative.size == "small")) {
+                        if (target.form == "box") {
+                            if (relative.form == "brick" && relative.size == "large") {
+                                result.push(combs[i]);
+                            }
+                        } else if (target.form == "ball") {
+                            if (relative.form == "floor" || relative.form == "box") {
+                                result.push(combs[i]);
+                            }
+                        } else if (!(relative.form == "ball")) {
+                            result.push(combs[i]);
+                        }
+                    }
+                } else {
+                    result.push(combs[i]);
+                }
+            }
+            
+        }
+        
+        return result;
+    }
+    
+    // returns list of tags for objects satisfying 'entity' in world 'state'
+    function getPossibleEntitieTags(entity,state : WorldState) : string[] {
+        
+        // return value
+        var result : any[] = [];
+        
+        let targetObject = entity.object;
+        if (entity.location == null) {
+            let matchingStateObjectTags = filterFeatures(targetObject,state);
+            result = matchingStateObjectTags;
+        } else {
+            let location = targetObject.location;
+            let relation = location.relation;
+            let relativeEntity = location.entity;
+            
+            targetObject = targetObject.object;
+            let possibleTargetTags = filterFeatures(targetObject,state);
+            
+            let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
+            
+            for (let thisPossibleTargetTag in possibleTargetTags) {
+                for (let thisRelativeTag in possibleRelativeTags) {
+                    let thisPossibleTarget = state.objects[thisPossibleTargetTag];
+                    let thisRelative = state.objects[thisRelativeTag];
+                    if (relation == "inside") {
+                        if (thisRelative.form == "box"
+                            && isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
+                            && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
+                            ) {
+                                if (!(thisPossibleTarget.size == "large" && thisRelative.size == "small")) {
+                                    result.push(thisRelativeTag);
+                                }
+                        }
+                    } else if (relation == "ontop") {
+                        if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
+                            && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
+                            ) {
+                                result.push(thisRelativeTag);
+                        }
+                    } else if (relation == "above") {
+                        if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
+                            && stackIndexOf(thisPossibleTargetTag,state) > stackIndexOf(thisRelativeTag,state)
+                            ) {
+                                result.push(thisRelativeTag);
+                        }
+                    } else if (relation == "under") {
+                        if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
+                            && stackIndexOf(thisPossibleTargetTag,state) < stackIndexOf(thisRelativeTag,state)
+                            ) {
+                                result.push(thisRelativeTag);
+                        }
+                    } else if (relation == "beside") {
+                        if (((stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state))^2) == 1) {
+                            result.push(thisRelativeTag);
+                        }
+                    } else if (relation == "leftof") {
+                        if (stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state) == -1) {
+                            result.push(thisRelativeTag);
+                        }
+                    } else if (relation == "rightof") {
+                        if (stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state) == 1) {
+                            result.push(thisRelativeTag);
+                        }
                     }
                 }
             }
         }
-
-         console.log("ATEMP:",aTemp);  
-
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
-        ]];
-       
-        console.log(JSON.stringify(cmd));
-        console.log(state);
         
-       // console.log("-------------------------------TEST---------------------");
-        //console.log("test", tempStateObj);
-        //console.log("stateStacks",state.objects['a'].color);
-        //console.log("=============================================================");
-        
-        var b: string = stateStacks[Math.floor(Math.random() * stateStacks.length)];
-
-        return interpretation;
+        return result;
     }
-
 }
 
