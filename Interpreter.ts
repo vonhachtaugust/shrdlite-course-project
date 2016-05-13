@@ -113,6 +113,13 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         
         let command = cmd.command;
         
+        console.log()
+        console.log(cmd)
+        console.log(JSON.stringify(cmd))
+        console.log()
+        console.log(state)
+        console.log()
+        
         let interpretation : DNFFormula = [];
         
         if (command == "take") {
@@ -205,6 +212,10 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     // returns list of tags for objects satisfying 'entity' in world 'state'
     function getPossibleEntitieTags(entity,state : WorldState) : string[] {
         
+        console.log("\ngetPossibleEntitieTags called: ")
+        console.log(entity)
+        console.log()
+        
         // return value
         var result : any[] = [];
         
@@ -239,15 +250,26 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                                 }
                         }
                     } else if (relation == "ontop") {
-                        if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
-                            && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
-                            ) {
+                        if (
+                            (
+                                isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
+                                && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
+                            ) || (
+                                thisRelativeTag == "floor"
+                                && stackIndexOf(thisPossibleTargetTag,state) == 0
+                            )
+                           ) {
                                 result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "above") {
-                        if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
-                            && stackIndexOf(thisPossibleTargetTag,state) > stackIndexOf(thisRelativeTag,state)
-                            ) {
+                        if (
+                            (
+                                isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
+                                && stackIndexOf(thisPossibleTargetTag,state) > stackIndexOf(thisRelativeTag,state)
+                            ) || (
+                                thisRelativeTag == "floor"
+                            )
+                           ) {
                                 result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "under") {
@@ -272,6 +294,10 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 }
             }
         }
+        
+        console.log("\ngetPossibleEntitieTags returning: ")
+        console.log(result)
+        console.log()
         
         return result;
     }
@@ -302,7 +328,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                            state : WorldState) : boolean {
         let stackIndexTarget : number = stackIndex(thisPossibleTargetTag,state);
         let stackIndexRelative : number = stackIndex(thisRelativeTag,state);
-        return (stackIndexTarget > -1) && (stackIndexTarget == stackIndexRelative);
+        return ((stackIndexTarget > -1) && (stackIndexTarget == stackIndexRelative))
+               || thisRelativeTag == "floor";
     }
     
     // returns list of objects in 'stateObjects' matching 'targetObject' w.r.t the following features
