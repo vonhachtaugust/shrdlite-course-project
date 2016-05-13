@@ -158,7 +158,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     }
     
     function assertPhysicalLaws(combs,relation,state) {
-        
         // return value
         let result = [];
         
@@ -210,7 +209,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         var result : any[] = [];
         
         let targetObject = entity.object;
-        if (entity.location == null) {
+        if (targetObject.location == null) {
             let matchingStateObjectTags = filterFeatures(targetObject,state);
             result = matchingStateObjectTags;
         } else {
@@ -219,12 +218,15 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let relativeEntity = location.entity;
             
             targetObject = targetObject.object;
+            
             let possibleTargetTags = filterFeatures(targetObject,state);
             
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
             
-            for (let thisPossibleTargetTag in possibleTargetTags) {
-                for (let thisRelativeTag in possibleRelativeTags) {
+            for (let i = 0; i < possibleTargetTags.length; i++) {
+                let thisPossibleTargetTag = possibleTargetTags[i];
+                for (let j = 0; j < possibleRelativeTags.length; j++) {
+                    let thisRelativeTag = possibleRelativeTags[j];
                     let thisPossibleTarget = state.objects[thisPossibleTargetTag];
                     let thisRelative = state.objects[thisRelativeTag];
                     if (relation == "inside") {
@@ -233,38 +235,38 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                             && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
                             ) {
                                 if (!(thisPossibleTarget.size == "large" && thisRelative.size == "small")) {
-                                    result.push(thisRelativeTag);
+                                    result.push(thisPossibleTargetTag);
                                 }
                         }
                     } else if (relation == "ontop") {
                         if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
                             && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
                             ) {
-                                result.push(thisRelativeTag);
+                                result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "above") {
                         if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
                             && stackIndexOf(thisPossibleTargetTag,state) > stackIndexOf(thisRelativeTag,state)
                             ) {
-                                result.push(thisRelativeTag);
+                                result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "under") {
                         if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
                             && stackIndexOf(thisPossibleTargetTag,state) < stackIndexOf(thisRelativeTag,state)
                             ) {
-                                result.push(thisRelativeTag);
+                                result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "beside") {
-                        if (((stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state))^2) == 1) {
-                            result.push(thisRelativeTag);
+                        if (Math.abs(stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state)) == 1) {
+                            result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "leftof") {
                         if (stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state) == -1) {
-                            result.push(thisRelativeTag);
+                            result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "rightof") {
                         if (stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state) == 1) {
-                            result.push(thisRelativeTag);
+                            result.push(thisPossibleTargetTag);
                         }
                     }
                 }
@@ -307,6 +309,10 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     let matchFeatures = ["size","color","form"];
     function filterFeatures(targetObject,state : WorldState) : string[] {
         
+        if (targetObject.form == "floor") {
+            return ["floor"];
+        }
+        
         // return value
         var result : any[] = [];
         
@@ -317,7 +323,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let objectMatch : boolean = true;
             for (let i = 0; i < matchFeatures.length; i++) {
                 let feature = matchFeatures[i];
-                if (targetObject[feature] == null || targetObject[feature] == "anyform") continue;
+                if (targetObject[feature] == null || targetObject[feature] == "anyform" || targetObject[feature] == "anysize") continue;
                 if (targetObject[feature] != stateObjects[objTag][feature]) {
                     objectMatch = false;
                     break;
