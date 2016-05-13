@@ -145,20 +145,24 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
             console.log("possibleRelativeTags: " + possibleRelativeTags)
             
-            let combs = cartesianProd(possibleTargetTags,possibleRelativeTags);
+            let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
             combs = assertPhysicalLaws(combs,cmd.location.relation,state);
             console.log("combs: " + combs);
+            console.log(JSON.stringify(combs));
             
             for (let i = 0; i < combs.length; i++) {
                 let comb = combs[i];
                 console.log("comb[0]: " + comb[0]);
                 console.log("comb[1]: " + comb[1]);
                 console.log("relation: " + cmd.location.relation);
+                console.log([{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]);
                 interpretation.push(
-                    [{polarity: true, relation: cmd.location.relation, args: [comb[0][0],comb[1][0]]}]
+                    [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
                 );
             }
         }
+        console.log();
+        console.log(interpretation);
         console.log(interpretation.length);
         if (interpretation.length == 0) return undefined;
         return interpretation;
@@ -192,7 +196,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                                 result.push(combs[i]);
                             }
                         } else if (target.form == "ball") {
-                            if (relative.form == "floor" || relative.form == "box") {
+                            if (relativeTag == "floor" || relative.form == "floor" || relative.form == "box") {
                                 result.push(combs[i]);
                             }
                         } else if (!(relative.form == "ball")) {
@@ -361,24 +365,18 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return result;
     }
     
-    // calculate the cartesian product of lists
-    function cartesianProd(l1, l2) {
-        let arg = [l1, l2];
-        let max = arg.length-1;
-        let r = [];
-        function helper(arr, i) {
-            for (var j=0, l=arg[i].length; j<l; j++)
-            {
-                var a = arr.slice(0); // clone arr
-                a.push(arg[i][j]);
-                if (i==max)
-                    r.push(a);
-                else
-                    helper(a, i+1);
+    // return the cartesian product of l1, l2
+    function cartesianProd(l1, l2) : string[][] {
+        
+        // return value
+        let result : string[][] = [];
+        
+        for (let i = 0; i < l1.length; i++) {
+            for (let j = 0; j < l2.length; j++) {
+                result.push([l1[i],l2[j]]);
             }
         }
-        helper([], 0);
-        return r;
+        
+        return result;
     }
 }
-
