@@ -139,7 +139,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 );
             }
         } else if (command == "move") {
-            try {
             // target
             let targetEntity = cmd.entity;
             let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
@@ -165,20 +164,17 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
                 );
             }
-            } catch(e) {
-                console.log(" ------------ error")
-                console.log(e);
-            }
         }
         console.log();
         console.log(interpretation);
         console.log(interpretation.length);
         if (interpretation.length == 0) {
             console.log("returned undefined");
-            return [[{polarity: false, relation: "", args: []}]];
+            return undefined;
+        } else {
+            console.log("did not return undefined");
+            return interpretation;
         }
-        console.log("did not return undefined");
-        return interpretation;
     }
     
     function assertPhysicalLaws(combs : any, relation : any, state : any) {
@@ -269,7 +265,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                         console.log();
                         if (thisRelative.form == "box"
                             && isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
-                            && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) - 1
+                            && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
                             ) {
                                 if (!(thisPossibleTarget.size == "large" && thisRelative.size == "small")) {
                                     result.push(thisPossibleTargetTag);
