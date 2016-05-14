@@ -42,15 +42,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                console.log();
-                console.log("result.interpretation: " + result.interpretation)
-                interpretations.push(result);
+                if (result.interpretation) interpretations.push(result);
             } catch(err) {
                 errors.push(err);
             }
         });
-        console.log();
-        console.log(JSON.stringify(interpretations))
         if (interpretations.length) {
             return interpretations;
         } else {
@@ -86,7 +82,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     }
 
     export function stringify(result : InterpretationResult) : string {
-        console.log("result.interpretation: " + result.interpretation)
         return result.interpretation.map((literals) => {
             return literals.map((lit) => stringifyLiteral(lit)).join(" & ");
             // return literals.map(stringifyLiteral).join(" & ");
@@ -118,19 +113,11 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         
         let command = cmd.command;
         
-        console.log()
-        console.log(cmd)
-        console.log(JSON.stringify(cmd))
-        console.log()
-        console.log(state)
-        console.log()
-        
         let interpretation : DNFFormula = [];
         
         if (command == "take") {
             let targetEntity = cmd.entity;
             let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
-            console.log("possibleTargetTags: " + possibleTargetTags)
             
             for (let i = 0; i < possibleTargetTags.length; i++) {
                 let possibleTargetTag = possibleTargetTags[i];
@@ -142,39 +129,24 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             // target
             let targetEntity = cmd.entity;
             let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
-            console.log("possibleTargetTags: " + possibleTargetTags)
             
             // relative
             let relativeEntity = cmd.location.entity;
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
-            console.log("possibleRelativeTags: " + possibleRelativeTags)
             
             let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
             combs = assertPhysicalLaws(combs,cmd.location.relation,state);
-            console.log("combs: " + combs);
-            console.log(JSON.stringify(combs));
             
             for (let i = 0; i < combs.length; i++) {
                 let comb = combs[i];
-                console.log("comb[0]: " + comb[0]);
-                console.log("comb[1]: " + comb[1]);
-                console.log("relation: " + cmd.location.relation);
-                console.log([{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]);
                 interpretation.push(
                     [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
                 );
             }
         }
-        console.log();
-        console.log(interpretation);
-        console.log(interpretation.length);
-        if (interpretation.length == 0) {
-            console.log("returned undefined");
-            return undefined;
-        } else {
-            console.log("did not return undefined");
-            return interpretation;
-        }
+        
+        if (interpretation.length == 0) return undefined;
+        return interpretation;
     }
     
     function assertPhysicalLaws(combs : any, relation : any, state : any) {
@@ -229,13 +201,10 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         var result : any[] = [];
         
         let targetObject = entity.object;
-        console.log("reached 0")
         if (targetObject.location == null) {
-            console.log("reached 1")
             let matchingStateObjectTags = filterFeatures(targetObject,state);
             result = matchingStateObjectTags;
         } else {
-            console.log("reached 2")
             let location = targetObject.location;
             let relation = location.relation;
             let relativeEntity = location.entity;
@@ -253,16 +222,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     let thisPossibleTarget = state.objects[thisPossibleTargetTag];
                     let thisRelative = state.objects[thisRelativeTag];
                     if (relation == "inside") {
-                        console.log("thisPossibleTargetTag: " + thisPossibleTargetTag)
-                        console.log("thisRelativeTag: " + thisRelativeTag)
-                        console.log("thisRelative: " + thisRelative)
-                        console.log("thisRelative.form: " + thisRelative.form)
-                        console.log(isInSameStack(thisPossibleTargetTag,thisRelativeTag,state))
-                        console.log(stackIndexOf(thisRelativeTag,state))
-                        console.log(stackIndexOf(thisPossibleTargetTag,state))
-                        console.log(stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1)
-                        
-                        console.log();
                         if (thisRelative.form == "box"
                             && isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
                             && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1
