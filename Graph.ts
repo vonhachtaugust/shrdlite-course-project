@@ -34,63 +34,26 @@ class SearchResult<Node> {
 }
 
 /**
- * 
+ * Structure to save nodes, with corresponding score
  */
-class NodeMap<Node> {
-    node : Node;
-    map : any;
+class NodeScore {
+    node : any;
+    score : number;
 }
 
 /**
- * Structure for mapping nodes to values, search as numbers or
- * other nodes.
+ * function for comparing NodeScore objects
  */
-class NodeTable<Node> {
-  nodes : NodeMap<Node>[];
-  constructor(
-      public defaultMap : any
-  ) { 
-    this.nodes = [];
-  }
-
-  GetFVal(node : Node) : any {
-    for (let i = 0; i < this.nodes.length; i++) {
-      if (this.nodes[i].node == node) {
-        return this.nodes[i].map;
-      }
+var comperator : collections.ICompareFunction<NodeScore> = 
+    function(a : NodeScore, b : NodeScore) {
+        if (a.score < b.score) {
+            return -1;
+        } else if (a.node === b.node && a.score === b.score) {
+            return 0;
+        } else {
+            return 1;
+        }
     }
-    // node has not been inserted, return default value
-    return this.defaultMap;
-  }
-
-  Insert(node : Node, fVal : any) {
-    for (let i = 0; i < this.nodes.length; i++) {
-      if (this.nodes[i].node == node) {
-        this.nodes[i].map = fVal;
-        return;
-      }
-    }
-    this.nodes.push({
-      node: node,
-      map: fVal
-    });
-  }
-
-  // This function works only if the map is a number
-  GetArgMinAmong(feasibleSet : Node[]) : Node {
-    let minFNode : Node;
-    let minF : number;
-    for (let i = 0; i < feasibleSet.length; i++) {
-      let thisNode = feasibleSet[i];
-      let thisNodeFVal = this.GetFVal(thisNode);
-      if (minF == null || thisNodeFVal < minF) {
-        minFNode = thisNode;
-        minF = thisNodeFVal;
-      }
-    }
-    return minFNode;
-  }
-}
 
 /**
  * Function for checking if all the nodes in a list are equal.
@@ -104,7 +67,6 @@ function equal<Node>(ns : Node[]): boolean {
   }
   return res;
 }
-
 
 /**
  * Function for checking if a list contains a node
@@ -138,23 +100,36 @@ function aStarSearch<Node>(
     let closedSet : Node[] = [];
     let openSet : Node[] = [start];
     
-    let gScore : NodeTable<Node> = new NodeTable<Node>(Infinity);
-    gScore.Insert(start,0);
+    let gScore : collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
+    gScore.setValue(start,0);
     
-    let fScore : NodeTable<Node> = new NodeTable<Node>(Infinity);
-    fScore.Insert(start, heuristics(start));
+    let fScore : collections.Dictionary<any, number> = new collections.Dictionary<any, number>();
+    fScore.setValue(start, heuristics(start));
     
-    let cameFrom: NodeTable<Node> = new NodeTable<Node>(undefined);
+    let fScoreOpenHeap : collections.Heap<NodeScore> = new collections.Heap<NodeScore>(comperator);
+    fScoreOpenHeap.add({
+        node: start,
+        score: heuristics(start)
+    });
+    
+    let cameFrom : collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
     
     while (openSet.length > 0) {
-      let current = fScore.GetArgMinAmong(openSet);
+      console.log();
+      console.log("openSet:");
+      console.log(openSet);
+      console.log();
+      let current = fScoreOpenHeap.removeRoot().node;
+      console.log("current:");
+      console.log(current);
+      console.log();
 
       if (goal(current)) {
           result = reconstructPath(
               cameFrom,
               current,
               start,
-              fScore.GetFVal(current)
+              fScore.getValue(current)
                 );
             break;    
       }
@@ -177,19 +152,32 @@ function aStarSearch<Node>(
         }
         
         // The cost from start to this neighbour
-        let tentative_gScore = gScore.GetFVal(current) + thisEdge.cost;
+        let tentative_gScore = gScore.getValue(current) + thisEdge.cost;
         
+        let pushedThisNeighbourToOpenSet = false;
         if (!contains(thisNeighbour,openSet)) {
           // This neighbour has not yet been encountered
           openSet.push(thisNeighbour);
-        } else if (tentative_gScore >= gScore.GetFVal(thisNeighbour)) {
+          pushedThisNeighbourToOpenSet = true;
+        } else if (tentative_gScore >= gScore.getValue(thisNeighbour)) {
           // This path is more costly
           continue;
         } 
         
-        cameFrom.Insert(thisNeighbour, current);
-        gScore.Insert(thisNeighbour,tentative_gScore);
-        fScore.Insert(thisNeighbour, tentative_gScore + heuristics(thisNeighbour));
+        // update predecessor map
+        cameFrom.setValue(thisNeighbour, current);
+        
+        // save new g/f-score
+        gScore.setValue(thisNeighbour,tentative_gScore);
+        fScore.setValue(thisNeighbour, tentative_gScore + heuristics(thisNeighbour));
+        
+        // add fScore to the min heap, if corresponding node was added to openSet
+        if (pushedThisNeighbourToOpenSet) {
+            fScoreOpenHeap.add({
+                node: thisNeighbour,
+                score: tentative_gScore + heuristics(thisNeighbour)
+            });
+        }
       }
     }
     // if no path exists, result is undefined
@@ -201,12 +189,19 @@ function aStarSearch<Node>(
  * @param cameFrom table mapping nodes to the predecessors
  * @param current the node from which to begin generating path backwards
  */
-function reconstructPath<Node>(cameFrom: NodeTable<Node>, current : Node, start : Node, totalCost: number): SearchResult<Node> {
+function reconstructPath<Node>(cameFrom: collections.Dictionary<Node, Node>, current : Node, start : Node, totalCost: number): SearchResult<Node> {
     let total_path: SearchResult<Node> = {path:[current],cost:totalCost};
 
+    console.log();
+    
     // Predecessor path from goal to start:
-    while  (current != start) {
-        current = cameFrom.GetFVal(current);
+    while (current != start) {
+        console.log("start: " + start);
+        console.log("current: " + current);
+        current = cameFrom.getValue(current);
+        console.log("currentMap: " + current);
+        console.log("newCurrent: " + current);
+        console.log();
         total_path.path.push(current);
     }
     // Remove start from list:
