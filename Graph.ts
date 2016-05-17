@@ -74,14 +74,13 @@ function aStarSearch<Node>(
     ): SearchResult<Node> {
     var result : SearchResult<Node>;
     
-    let closedSet : Node[] = [];
-    let openSet : Node[] = [start];
+    let closedSet : collections.Set<Node> = new collections.Set<Node>();
     
     let gScore : collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
     gScore.setValue(start,0);
     
-    let fScoreOpenHeap : collections.Heap<NodeScore> = new collections.Heap<NodeScore>(comperator);
-    fScoreOpenHeap.add({
+    let openSetHeap : collections.Heap<NodeScore> = new collections.Heap<NodeScore>(comperator);
+    openSetHeap.add({
         node: start,
         score: heuristics(start)
     });
@@ -89,8 +88,8 @@ function aStarSearch<Node>(
     let cameFrom : collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
     
     let t : number = 0;
-    while (openSet.length > 0 && t < timeout) {
-      let rootNode = fScoreOpenHeap.removeRoot();
+    while (openSetHeap.peek() && t < timeout) {
+      let rootNode = openSetHeap.removeRoot();
       let current = rootNode.node;
 
 
@@ -104,10 +103,8 @@ function aStarSearch<Node>(
             break;    
       }
 
-      // Remove current from open set
-      openSet.splice(openSet.indexOf(current),1);
       // Add current to closed set
-      closedSet.push(current);
+      closedSet.add(current);
       
       let currentNeighbourEdges : Edge<Node>[] = graph.outgoingEdges(current);
       
@@ -117,7 +114,7 @@ function aStarSearch<Node>(
         let thisNeighbour = thisEdge.to;
         
         // If this neighbour is in closed set, then skip
-        if (closedSet.indexOf(thisNeighbour) > -1) {
+        if (closedSet.contains(thisNeighbour)) {
           continue;
         }
         
@@ -128,9 +125,6 @@ function aStarSearch<Node>(
           // This path is more costly
           continue;
         }
-        
-        // This neighbour cost is less coslty therefore add it
-        openSet.push(thisNeighbour);
 
         // save new g-score
         gScore.setValue(thisNeighbour, tentative_gScore);
@@ -138,7 +132,7 @@ function aStarSearch<Node>(
         // update predecessor map
         cameFrom.setValue(thisNeighbour, current);
         
-        fScoreOpenHeap.add({
+        openSetHeap.add({
           node: thisNeighbour,
           score: tentative_gScore + heuristics(thisNeighbour)
         });
