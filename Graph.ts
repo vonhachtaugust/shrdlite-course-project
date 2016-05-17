@@ -56,29 +56,6 @@ var comperator : collections.ICompareFunction<NodeScore> =
     }
 
 /**
- * Function for checking if all the nodes in a list are equal.
- * The order of the data fields needs to be in the same order
- * in order for nodes to be equal
- */
-function equal<Node>(ns : Node[]): boolean {
-  let res : boolean = true;
-  for (let i = 1; i < ns.length; i++) {
-    res = res && (JSON.stringify(ns[i-1]) == JSON.stringify(ns[i]));
-  }
-  return res;
-}
-
-/**
- * Function for checking if a list contains a node
- */
-function contains<Node>(n: Node, ns: Node[] ): boolean {
-  for (let i = 0; i < ns.length; i++) {
-    if (equal([n,ns[i]])) return true;
-  }
-  return false;
-}
-
-/**
 * A\* search implementation, parameterised by a `Node` type.
 *
 * @param graph The graph on which to perform A\* search.
@@ -103,9 +80,6 @@ function aStarSearch<Node>(
     let gScore : collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
     gScore.setValue(start,0);
     
-    let fScore : collections.Dictionary<any, number> = new collections.Dictionary<any, number>();
-    fScore.setValue(start, heuristics(start));
-    
     let fScoreOpenHeap : collections.Heap<NodeScore> = new collections.Heap<NodeScore>(comperator);
     fScoreOpenHeap.add({
         node: start,
@@ -114,22 +88,18 @@ function aStarSearch<Node>(
     
     let cameFrom : collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
     
-    while (openSet.length > 0) {
-      console.log();
-      console.log("openSet:");
-      console.log(openSet);
-      console.log();
-      let current = fScoreOpenHeap.removeRoot().node;
-      console.log("current:");
-      console.log(current);
-      console.log();
+    let t : number = 0;
+    while (openSet.length > 0 && t < timeout) {
+      let rootNode = fScoreOpenHeap.removeRoot();
+      let current = rootNode.node;
+
 
       if (goal(current)) {
-          result = reconstructPath(
-              cameFrom,
-              current,
-              start,
-              fScore.getValue(current)
+        result = reconstructPath(
+          cameFrom,
+          current,
+          start,
+          rootNode.score  
                 );
             break;    
       }
@@ -153,31 +123,28 @@ function aStarSearch<Node>(
         
         // The cost from start to this neighbour
         let tentative_gScore = gScore.getValue(current) + thisEdge.cost;
-        
-        let pushedThisNeighbourToOpenSet = false;
-        if (!contains(thisNeighbour,openSet)) {
-          // This neighbour has not yet been encountered
-          openSet.push(thisNeighbour);
-          pushedThisNeighbourToOpenSet = true;
-        } else if (tentative_gScore >= gScore.getValue(thisNeighbour)) {
+
+        if (tentative_gScore >= gScore.getValue(thisNeighbour)) {
           // This path is more costly
           continue;
-        } 
+        }
         
+        // This neighbour cost is less coslty therefore add it
+        openSet.push(thisNeighbour);
+
+        // save new g-score
+        gScore.setValue(thisNeighbour, tentative_gScore);
+
         // update predecessor map
         cameFrom.setValue(thisNeighbour, current);
         
-        // save new g/f-score
-        gScore.setValue(thisNeighbour,tentative_gScore);
-        fScore.setValue(thisNeighbour, tentative_gScore + heuristics(thisNeighbour));
+        fScoreOpenHeap.add({
+          node: thisNeighbour,
+          score: tentative_gScore + heuristics(thisNeighbour)
+        });
         
-        // add fScore to the min heap, if corresponding node was added to openSet
-        if (pushedThisNeighbourToOpenSet) {
-            fScoreOpenHeap.add({
-                node: thisNeighbour,
-                score: tentative_gScore + heuristics(thisNeighbour)
-            });
-        }
+        // milli-loops
+        t = t + 0.001;
       }
     }
     // if no path exists, result is undefined
@@ -191,17 +158,10 @@ function aStarSearch<Node>(
  */
 function reconstructPath<Node>(cameFrom: collections.Dictionary<Node, Node>, current : Node, start : Node, totalCost: number): SearchResult<Node> {
     let total_path: SearchResult<Node> = {path:[current],cost:totalCost};
-
-    console.log();
     
     // Predecessor path from goal to start:
     while (current != start) {
-        console.log("start: " + start);
-        console.log("current: " + current);
         current = cameFrom.getValue(current);
-        console.log("currentMap: " + current);
-        console.log("newCurrent: " + current);
-        console.log();
         total_path.path.push(current);
     }
     // Remove start from list:
