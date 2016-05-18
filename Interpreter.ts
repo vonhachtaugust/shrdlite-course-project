@@ -1,4 +1,4 @@
-1///<reference path="World.ts"/>
+///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
 
 /**
