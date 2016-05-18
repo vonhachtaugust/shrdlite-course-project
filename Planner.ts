@@ -76,6 +76,7 @@ module Planner {
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
         // This function returns a dummy plan involving a random stack
+        alert("hej");
         do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
         } while (state.stacks[pickstack].length == 0);
@@ -118,6 +119,41 @@ module Planner {
                   "d");
 
         return plan;
+    }
+    
+    /**
+     * generate a graph describing the possible tranversement through world states
+     * 
+     * @param currentState State from which to start generate graph
+     * @returns Graph
+     */
+    function generateWorldGraph(currentState : WorldState) : Graph<Node> {
+        
+        // return value
+        let worldGraph : Graph<Node>;
+        
+        // queue of states to expand
+        let q : collections.Queue<WorldState> = new collections.Queue<WorldState>();
+        q.enqueue(currentState);
+        
+        while (!q.isEmpty) {
+            let thisState = q.dequeue();
+            let thisStateNode : Node = new Node();
+            thisStateNode.attributes = {length: 0, state: thisState};
+            
+            // list of states reachable from thisState
+            let stateNeighbours = getReachableStates(thisState);
+            
+            // new edges to add to worldGraph
+            worldGraph.outgoingEdges(thisState)
+            
+            for (let i = 0; i < stateNeighbours.length; i++) {
+                let thisNeighbour = stateNeighbours[i];
+                q.enqueue(thisNeighbour);
+            }
+        }
+        
+        return worldGraph;
     }
 
 }

@@ -87,11 +87,10 @@ function aStarSearch<Node>(
     
     let cameFrom : collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
     
-    let t : number = 0;
-    while (openSetHeap.peek() && t < timeout) {
+    let maxTime : number = Date.now() + timeout*1000;
+    while (openSetHeap.peek() && Date.now() < maxTime) {
       let rootNode = openSetHeap.removeRoot();
       let current = rootNode.node;
-
 
       if (goal(current)) {
         result = reconstructPath(
@@ -136,9 +135,6 @@ function aStarSearch<Node>(
           node: thisNeighbour,
           score: tentative_gScore + heuristics(thisNeighbour)
         });
-        
-        // milli-loops
-        t = t + 0.001;
       }
     }
     // if no path exists, result is undefined
