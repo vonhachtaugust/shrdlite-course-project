@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
+///<reference path="Graph.ts"/>
 
 /** 
 * Planner module
@@ -76,7 +77,34 @@ module Planner {
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
         // This function returns a dummy plan involving a random stack
-        alert("hej");
+        
+        // development debug prints
+        console.log("=================================================");
+        
+        console.log("current state:");
+        console.log(state);
+        console.log();
+        console.log("reachable states:")
+        console.log(getReachableStates(state));
+        console.log()
+        
+        let stateGraph : StateGraph = new StateGraph();
+        
+        let path = aStarSearch(
+            stateGraph,
+            state,
+            isGoal,
+            heuristic,
+            10
+        );
+        
+        console.log("aStarSearch output path:");
+        console.log(path);
+        
+        console.log("=================================================");
+        console.log()
+        
+        // below is the dummy plan generation
         do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
         } while (state.stacks[pickstack].length == 0);
@@ -122,38 +150,139 @@ module Planner {
     }
     
     /**
-     * generate a graph describing the possible tranversement through world states
-     * 
-     * @param currentState State from which to start generate graph
-     * @returns Graph
+     * function for determing if state 's' is goal
      */
-    function generateWorldGraph(currentState : WorldState) : Graph<Node> {
+    var isGoal = function(s : WorldState) {
+        return true;
+    }
+    
+    /**
+     * function for calculating the heuristic for state 's'
+     */
+    var heuristic = function(s : WorldState) {
+        return 0;
+    }
+
+    class StateGraph implements Graph<WorldState> {
+        
+        outgoingEdges(state : WorldState) : Edge<WorldState>[] {
+            
+            // return value
+            let outgoingEdges : Edge<WorldState>[] = [];
+            
+            // get states reachable from 'state'
+            let outgoingNodes : WorldState[] = getReachableStates(state);
+            
+            // prepare the list of edges
+            for (let i = 0; i < outgoingNodes.length; i++) {
+                outgoingEdges.push({
+                    from: state,
+                    to: outgoingNodes[i],
+                    cost: 1
+                });
+            }
+            
+            return outgoingEdges;
+        }
+
+        compareNodes(a : WorldState, b : WorldState) : number {
+            if (JSON.stringify(a) != JSON.stringify(b)) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    }
+    
+    /**
+     * generate a list of states reachable in one move
+     */
+    function getReachableStates(state : WorldState) : WorldState[] {
         
         // return value
-        let worldGraph : Graph<Node>;
+        let reachableStates : WorldState[] = [];
         
-        // queue of states to expand
-        let q : collections.Queue<WorldState> = new collections.Queue<WorldState>();
-        q.enqueue(currentState);
+        // move left
+        if (state.arm > 0) {
+            
+            // clone current state
+            let leftState = cloneObject(state);
+            
+            leftState.arm = state.arm - 1;
+                
+            // save reachable state
+            reachableStates.push(leftState);
+        }
         
-        while (!q.isEmpty) {
-            let thisState = q.dequeue();
-            let thisStateNode : Node = new Node();
-            thisStateNode.attributes = {length: 0, state: thisState};
+        // move right
+        if (state.arm < state.stacks.length - 1) {
             
-            // list of states reachable from thisState
-            let stateNeighbours = getReachableStates(thisState);
+            // clone current state
+            let rightState = cloneObject(state);
             
-            // new edges to add to worldGraph
-            worldGraph.outgoingEdges(thisState)
-            
-            for (let i = 0; i < stateNeighbours.length; i++) {
-                let thisNeighbour = stateNeighbours[i];
-                q.enqueue(thisNeighbour);
+            rightState.arm = state.arm + 1;
+                
+            // save reachable state
+            reachableStates.push(rightState);
+        }
+        
+        // pick up / drop object
+        let heldObjectTag = state.holding;
+        let stateArmPos : number = state.arm;
+        let stateStackBelowArm : Stack = state.stacks[stateArmPos];
+        let numElsInStack : number = stateStackBelowArm.length;
+        if (heldObjectTag == null) { // pick up
+            if (numElsInStack > 0) {
+                
+                // clone current state
+                let pickUpState = cloneObject(state);
+                
+                // pick up object
+                let pickedObject = pickUpState.stacks[stateArmPos].pop();
+                pickUpState.holding = pickedObject;
+                
+                // save reachable state
+                reachableStates.push(pickUpState);
+            }
+        } else { // drop
+            let stackTopObjectTag : String = stateStackBelowArm[numElsInStack - 1];
+            let canDrop : boolean = checkRelation("ontop",[heldObjectTag,stackTopObjectTag],state);
+            if (canDrop) {
+                
+                // clone current state
+                let dropState = cloneObject(state);
+                
+                // drop object
+                dropState.stacks[stateArmPos].push(heldObjectTag);
+                dropState.holding = null;
+                
+                // save reachable state
+                reachableStates.push(dropState);
             }
         }
         
-        return worldGraph;
+        return reachableStates;
+    }
+    
+    /**
+     * evaluate if relation is possible within certain WorldState
+     */
+    function checkRelation(rel : string, args : String[], state : WorldState) : boolean {
+        return true;
+    }
+    
+    /**
+     * used for cloning objects
+     */
+    function cloneObject(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+        var temp = obj.constructor();
+        for (var key in obj) {
+            temp[key] = cloneObject(obj[key]);
+        }
+        return temp;
     }
 
 }
