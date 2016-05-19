@@ -77,7 +77,7 @@ module Planner {
      */
     function planInterpretation(interpretation: Interpreter.DNFFormula, state: WorldState): string[] {
 
-        // var isgoal = (n: Node) => spatialRelationComparison(interpretation, n);
+        var isGoal = (n: any) => goal(interpretation, n);
 
         // This function returns a dummy plan involving a random stack
 
@@ -157,8 +157,70 @@ module Planner {
      * function for determing if state 's' is goal
      */
     var isGoal = function(s: WorldState) {
-        return true;
+        return undefined;
     }
+
+    /**
+     * function used by isGoal to check the current world state with the interpretation
+     */
+
+    function goal(interpretation: Interpreter.DNFFormula, state: WorldState): boolean {
+        // for each found interpretation
+        for (let i = 0; interpretation.length; i++) {
+            // for each disjunctive goal
+            for (let j = 0; interpretation.length[i].length; j++) {
+                let rel: string = interpretation[i][j].relation;
+                let args: string[] = interpretation[i][j].args;
+                // fulfill a conjunctive goal
+                if (checkRelation(rel, args, state) && conjunctive(rel, args, interpretation[i][j], state)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function conjunctive(relation: string, args: string[], interpretation: any, state : WorldState): boolean {
+        // function assumes previous required conditions between number of arguments given a relation etc. are handled. See Interpreter.ts
+
+        // for each conjunctive goal
+        for (let i = 0; i < interpretation.length; i++) {
+            if (relation == "holding") {
+                return (state.holding == interpretation.args[0]);
+            }
+            else if ((relation == "inside") || (relation == "ontop")) {
+                if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
+                    return (Interpreter.stackIndexOf(interpretation.args[0],state) + 1 == Interpreter.stackIndexOf(interpretation.args[1],state));
+                }
+                return false;
+            }
+            else if (relation == "above") {
+                if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
+                    return (Interpreter.stackIndexOf(interpretation.args[0],state) > Interpreter.stackIndexOf(interpretation.args[1],state));       
+                }
+                return false;
+            }
+            else if (relation == "under") {
+                if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
+                    return (Interpreter.stackIndexOf(interpretation.args[0],state) < Interpreter.stackIndexOf(interpretation.args[1],state));
+                }
+                return false;
+            }
+            else if (relation == "beside") {
+                return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state))
+                    || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            }
+            else if (relation == "leftof") {
+                return (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            }
+            else if (relation == "rightof") {
+                return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            }     
+        }
+        // the relation doesn't exist.
+        return false;
+    }
+
 
     /**
      * function for calculating the heuristic for state 's'

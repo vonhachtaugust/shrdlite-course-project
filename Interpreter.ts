@@ -233,7 +233,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
    
  
     // returns the index of 'thisPossibleTargetTag' in it's respective stack
-    function stackIndexOf(thisPossibleTargetTag : string, state : WorldState) : number {
+    export function stackIndexOf(thisPossibleTargetTag : string, state : WorldState) : number {
         let stacks : string[][] = state.stacks;
 
         for (let i = 0; i < stacks.length; i++) {
@@ -245,7 +245,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     
 
     // returns the stack index of 'thisPossibleTargetTag'
-    function stackIndex(thisPossibleTargetTag : string, state : WorldState) : number {
+    export function stackIndex(thisPossibleTargetTag : string, state : WorldState) : number {
         let stacks : string[][] = state.stacks;
 
         for (let i = 0; i < stacks.length; i++) {
@@ -257,7 +257,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     
  
     // returns true if 'thisPossibleTargetTag' and 'thisRelativeTag' are in the same stack
-    function isInSameStack(thisPossibleTargetTag : string,
+    export function isInSameStack(thisPossibleTargetTag : string,
                            thisRelativeTag : string,
                            state : WorldState) : boolean {
 
