@@ -215,7 +215,12 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let targetTag = combs[i][0];
             let relativeTag = combs[i][1];
             let target = state.objects[targetTag];
-            let relative = state.objects[relativeTag];
+            let relative;
+            if (relativeTag == "floor") {
+                relative = {"size":null,"color":null,"form":"floor"};
+            } else {
+                relative = state.objects[relativeTag];
+            }
             
             if (targetTag != relativeTag) {
                 if (relation == "inside") {
