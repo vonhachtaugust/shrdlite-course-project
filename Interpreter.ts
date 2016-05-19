@@ -91,11 +91,12 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         let command = cmd.command; 
         let interpretation : DNFFormula = [];
+        console.log(cmd);
         
         if (command == "take") {
             let targetEntity = cmd.entity;
             let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
-            
+
             for (let i = 0; i < possibleTargetTags.length; i++) {
                 let possibleTargetTag = possibleTargetTags[i];
                 interpretation.push(
@@ -121,22 +122,22 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 );
             }
         }
-        
+
         if (interpretation.length == 0) return undefined;
         return interpretation;
     }
     
     
     // returns list of tags for objects satisfying 'entity' in world 'state'
-    function getPossibleEntitieTags(entity : any,state : WorldState) : string[] {
+    function getPossibleEntitieTags(entity : any, state : WorldState) : string[] {
         
         // return value
         var result : any[] = [];
         let targetObject = entity.object;
 
         if (targetObject.location == null) {
-            let matchingStateObjectTags = filterFeatures(targetObject,state);
-            result = matchingStateObjectTags;
+            let matchingStateObjectTags = filterFeatures(targetObject, state);
+            result.push(matchingStateObjectTags);    
         } else {
             let location = targetObject.location;
             let relation = location.relation;
@@ -202,10 +203,9 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 }
             }
         }
-        
         return result;
-    }
-   
+}
+
 
 	 // Imply the physical laws
     function assertPhysicalLaws(combs : any, relation : any, state : any) {
@@ -288,13 +288,12 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return ((stackIndexTarget > -1) && (stackIndexTarget == stackIndexRelative))
                || thisRelativeTag == "floor";
     }
-    
  
     // returns list of objects in 'stateObjects' matching 'targetObject' w.r.t the following features
     let matchFeatures = ["size","color","form"];
     function filterFeatures(targetObject : any, state : WorldState) : string[] {
         
-        if (targetObject.form == "floor") {
+        if (('form' in targetObject) && targetObject.form == "floor") {
             return ["floor"];
         }
         
@@ -303,9 +302,9 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         let stateObjects : any = state.objects;
         
         for (let objTag in stateObjects) {
-            if (stackIndex(objTag,state) == -1) continue;
+            if (stackIndex(objTag, state) == -1 && state.holding != objTag) continue ;
             let objectMatch : boolean = true;
-            for (let i : any = 0; i < matchFeatures.length; i++) {
+            for (let i: any = 0; i < matchFeatures.length; i++) {
                 let feature = matchFeatures[i];
                 if (targetObject[feature] == null || targetObject[feature] == "anyform" || targetObject[feature] == "anysize") continue;
                 if (targetObject[feature] != stateObjects[objTag][feature]) {
