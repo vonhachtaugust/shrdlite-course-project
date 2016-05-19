@@ -172,7 +172,7 @@ module Planner {
                 let rel: string = interpretation[i][j].relation;
                 let args: string[] = interpretation[i][j].args;
                 // fulfill a conjunctive goal
-                if (checkRelation(rel, args, state) && conjunctive(rel, args, interpretation[i][j], state)) {
+                if (Interpreter.checkRelation(rel, args, state) && conjunctive(rel, args, interpretation[i][j], state)) {
                     return true;
                 }
             }
