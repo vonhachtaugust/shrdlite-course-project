@@ -152,7 +152,14 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 for (let j = 0; j < possibleRelativeTags.length; j++) {
                     let thisRelativeTag = possibleRelativeTags[j];
                     let thisPossibleTarget = state.objects[thisPossibleTargetTag];
-                    let thisRelative = state.objects[thisRelativeTag];
+                    
+                    let thisRelative;
+                    if (thisRelativeTag == "floor") {
+                        thisRelative = {"size":null,"color":null,"form":"floor"};
+                    } else {
+                        thisRelative = state.objects[thisRelativeTag];
+                    }
+                    
                     if (relation == "inside") {
                         if (thisRelative.form == "box"
                             && isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
