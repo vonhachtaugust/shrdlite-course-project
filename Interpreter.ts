@@ -136,7 +136,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
 
         if (targetObject.location == null) {
             let matchingStateObjectTags = filterFeatures(targetObject, state);
-            result.push(matchingStateObjectTags);    
+            result = matchingStateObjectTags;
         } else {
             let location = targetObject.location;
             let relation = location.relation;
