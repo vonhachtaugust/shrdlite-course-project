@@ -227,7 +227,7 @@ module Planner {
         }
         
         // pick up / drop object
-        let heldObjectTag = state.holding;
+        let heldObjectTag : string = state.holding;
         let stateArmPos : number = state.arm;
         let stateStackBelowArm : Stack = state.stacks[stateArmPos];
         let numElsInStack : number = stateStackBelowArm.length;
@@ -245,7 +245,15 @@ module Planner {
                 reachableStates.push(pickUpState);
             }
         } else { // drop
-            let stackTopObjectTag : String = stateStackBelowArm[numElsInStack - 1];
+            
+            // potential object to drop onto
+            let stackTopObjectTag : string;
+            if (numElsInStack == 0) {
+                stackTopObjectTag = "floor";
+            } else {
+                stackTopObjectTag = stateStackBelowArm[numElsInStack - 1];
+            }
+            
             let canDrop : boolean = checkRelation("ontop",[heldObjectTag,stackTopObjectTag],state);
             if (canDrop) {
                 
@@ -267,7 +275,109 @@ module Planner {
     /**
      * evaluate if relation is possible within certain WorldState
      */
-    function checkRelation(rel : string, args : String[], state : WorldState) : boolean {
+    function checkRelation(rel : string, args : string[], state : WorldState) : boolean {
+        
+        if (args.length == 1) {
+            
+            // entity a
+            let a;
+            if (args[1] == "floor") {
+                a = {"size":null,"color":null,"form":"floor"};
+            } else {
+                a = state.objects[args[0]];
+            }
+            
+            if (rel == "holding") {
+                
+                // arm cannot hold floor
+                if (a.form == "floor") {
+                    return false;
+                }
+                
+            } else {
+                // relation not defined for one argument
+                return false;
+            }
+            
+        } else if (args.length == 2) {
+            
+            // entity a
+            let a = state.objects[args[0]];
+            
+            // entity b
+            let b;
+            if (args[1] == "floor") {
+                b = {"size":null,"color":null,"form":"floor"};
+            } else {
+                b = state.objects[args[1]];
+            }
+            
+            // 'ontop' is called 'inside' if 'b' is a box
+            if (b.form == "box") {
+                rel = "inside";
+            }
+            
+            // an object cannot be in relation with itself
+            if (a == b) {
+                return false;
+            }
+            
+            if (rel == "ontop") {
+                
+                // Balls must be in boxes or on the floor
+                if (a.form == "ball") {
+                    if (b.form != "floor" || b.form != "box") {
+                        return false;
+                    }
+                }
+                
+                // Balls cannot support anything
+                if (b.form == "ball") {
+                    return false;
+                }
+                
+                // Small objects cannot support large objects
+                if (a.size == "large" && b.size == "small") {
+                    return false;
+                }
+                
+                // Small boxes cannot be supported by small bricks or pyramids
+                if (a.form == "box" && a.size == "small") {
+                    if (b.form == "pyramid" && b.size == "small") {
+                        return false;
+                    }
+                    if (b.form == "brick" && b.size == "small") {
+                        return false;
+                    }
+                }
+                
+                // Large boxes cannot be supported by large pyramids
+                if (a.form == "box" && a.size == "large") {
+                    if (b.form == "pyramid" && b.size == "large") {
+                        return false;
+                    }
+                }
+                
+            } else if (rel == "inside") {
+                
+                // Boxes cannot contain pyramids, planks or boxes of the same size
+                if (b.form == "box") {
+                    if (a.size == b.size) {
+                        if (a.form == "pyramid" || a.form == "plank" || a.form == "box") {
+                            return false;
+                        }
+                    }
+                }
+                
+            } else {
+                // relation not defined for two args
+                return false;
+            }
+        } else {
+            // too many arguments
+            return false;
+        }
+        
         return true;
     }
     
