@@ -259,7 +259,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             }
             
         }
-        
         return result;
     }
    

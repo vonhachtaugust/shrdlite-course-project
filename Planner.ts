@@ -23,18 +23,18 @@ module Planner {
      * @param currentState The current state of the world.
      * @returns Augments Interpreter.InterpretationResult with a plan represented by a list of strings.
      */
-    export function plan(interpretations : Interpreter.InterpretationResult[], currentState : WorldState) : PlannerResult[] {
-        var errors : Error[] = [];
-        var plans : PlannerResult[] = [];
+    export function plan(interpretations: Interpreter.InterpretationResult[], currentState: WorldState): PlannerResult[] {
+        var errors: Error[] = [];
+        var plans: PlannerResult[] = [];
         interpretations.forEach((interpretation) => {
             try {
-                var result : PlannerResult = <PlannerResult>interpretation;
+                var result: PlannerResult = <PlannerResult>interpretation;
                 result.plan = planInterpretation(result.interpretation, currentState);
                 if (result.plan.length == 0) {
                     result.plan.push("That is already true!");
                 }
                 plans.push(result);
-            } catch(err) {
+            } catch (err) {
                 errors.push(err);
             }
         });
@@ -47,10 +47,10 @@ module Planner {
     }
 
     export interface PlannerResult extends Interpreter.InterpretationResult {
-        plan : string[];
+        plan: string[];
     }
 
-    export function stringify(result : PlannerResult) : string {
+    export function stringify(result: PlannerResult): string {
         return result.plan.join(", ");
     }
 
@@ -75,21 +75,25 @@ module Planner {
      * "d". The code shows how to build a plan. Each step of the plan can
      * be added using the `push` method.
      */
-    function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+    function planInterpretation(interpretation: Interpreter.DNFFormula, state: WorldState): string[] {
+
+        // var isgoal = (n: Node) => spatialRelationComparison(interpretation, n);
+
         // This function returns a dummy plan involving a random stack
-        
+
         // development debug prints
+        console.log(interpretation);
         console.log("=================================================");
-        
+
         console.log("current state:");
         console.log(state);
         console.log();
         console.log("reachable states:")
         console.log(getReachableStates(state));
         console.log()
-        
-        let stateGraph : StateGraph = new StateGraph();
-        
+
+        let stateGraph: StateGraph = new StateGraph();
+
         let path = aStarSearch(
             stateGraph,
             state,
@@ -97,18 +101,18 @@ module Planner {
             heuristic,
             10
         );
-        
+
         console.log("aStarSearch output path:");
         console.log(path);
-        
+
         console.log("=================================================");
         console.log()
-        
+
         // below is the dummy plan generation
         do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
         } while (state.stacks[pickstack].length == 0);
-        var plan : string[] = [];
+        var plan: string[] = [];
 
         // First move the arm to the leftmost nonempty stack
         if (pickstack < state.arm) {
@@ -123,56 +127,56 @@ module Planner {
             }
         }
 
-        // Then pick up the object
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length-1];
+        // Then pick up the object2
+        var obj = state.stacks[pickstack][state.stacks[pickstack].length - 1];
         plan.push("Picking up the " + state.objects[obj].form,
-                  "p");
+            "p");
 
-        if (pickstack < state.stacks.length-1) {
+        if (pickstack < state.stacks.length - 1) {
             // Then move to the rightmost stack
             plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length-1; i++) {
+            for (var i = pickstack; i < state.stacks.length - 1; i++) {
                 plan.push("r");
             }
 
             // Then move back
             plan.push("Moving back");
-            for (var i = state.stacks.length-1; i > pickstack; i--) {
+            for (var i = state.stacks.length - 1; i > pickstack; i--) {
                 plan.push("l");
             }
         }
 
         // Finally put it down again
         plan.push("Dropping the " + state.objects[obj].form,
-                  "d");
+            "d");
 
         return plan;
     }
-    
+
     /**
      * function for determing if state 's' is goal
      */
-    var isGoal = function(s : WorldState) {
+    var isGoal = function(s: WorldState) {
         return true;
     }
-    
+
     /**
      * function for calculating the heuristic for state 's'
      */
-    var heuristic = function(s : WorldState) {
+    var heuristic = function(s: WorldState) {
         return 0;
     }
 
     class StateGraph implements Graph<WorldState> {
-        
-        outgoingEdges(state : WorldState) : Edge<WorldState>[] {
-            
+
+        outgoingEdges(state: WorldState): Edge<WorldState>[] {
+
             // return value
-            let outgoingEdges : Edge<WorldState>[] = [];
-            
+            let outgoingEdges: Edge<WorldState>[] = [];
+
             // get states reachable from 'state'
-            let outgoingNodes : WorldState[] = getReachableStates(state);
-            
+            let outgoingNodes: WorldState[] = getReachableStates(state);
+
             // prepare the list of edges
             for (let i = 0; i < outgoingNodes.length; i++) {
                 outgoingEdges.push({
@@ -181,11 +185,11 @@ module Planner {
                     cost: 1
                 });
             }
-            
+
             return outgoingEdges;
         }
 
-        compareNodes(a : WorldState, b : WorldState) : number {
+        compareNodes(a: WorldState, b: WorldState): number {
             if (JSON.stringify(a) != JSON.stringify(b)) {
                 return 1;
             } else {
@@ -193,39 +197,39 @@ module Planner {
             }
         }
     }
-    
+
     /**
      * generate a list of states reachable in one move
      */
-    function getReachableStates(state : WorldState) : WorldState[] {
-        
+    function getReachableStates(state: WorldState): WorldState[] {
+
         // return value
-        let reachableStates : WorldState[] = [];
-        
+        let reachableStates: WorldState[] = [];
+
         // move left
         if (state.arm > 0) {
-            
+
             // clone current state
             let leftState = cloneObject(state);
-            
+
             leftState.arm = state.arm - 1;
-                
+
             // save reachable state
             reachableStates.push(leftState);
         }
-        
+
         // move right
         if (state.arm < state.stacks.length - 1) {
-            
+
             // clone current state
             let rightState = cloneObject(state);
-            
+
             rightState.arm = state.arm + 1;
-                
+
             // save reachable state
             reachableStates.push(rightState);
         }
-        
+
         // pick up / drop object
         let heldObjectTag : string = state.holding;
         let stateArmPos : number = state.arm;
@@ -233,14 +237,14 @@ module Planner {
         let numElsInStack : number = stateStackBelowArm.length;
         if (heldObjectTag == null) { // pick up
             if (numElsInStack > 0) {
-                
+
                 // clone current state
                 let pickUpState = cloneObject(state);
-                
+
                 // pick up object
                 let pickedObject = pickUpState.stacks[stateArmPos].pop();
                 pickUpState.holding = pickedObject;
-                
+
                 // save reachable state
                 reachableStates.push(pickUpState);
             }
@@ -256,22 +260,22 @@ module Planner {
             
             let canDrop : boolean = checkRelation("ontop",[heldObjectTag,stackTopObjectTag],state);
             if (canDrop) {
-                
+
                 // clone current state
                 let dropState = cloneObject(state);
-                
+
                 // drop object
                 dropState.stacks[stateArmPos].push(heldObjectTag);
                 dropState.holding = null;
-                
+
                 // save reachable state
                 reachableStates.push(dropState);
             }
         }
-        
+
         return reachableStates;
     }
-    
+
     /**
      * evaluate if relation is possible within certain WorldState
      */
@@ -377,10 +381,9 @@ module Planner {
             // too many arguments
             return false;
         }
-        
         return true;
     }
-    
+
     /**
      * used for cloning objects
      */
@@ -395,4 +398,47 @@ module Planner {
         return temp;
     }
 
+    function spatialRelationComparison(interpretation: Interpreter.DNFFormula, state: WorldState): boolean {
+        // Depending on relation, stack positions among objects are to hold
+        // currently we assume this function only gets one interpretation 
+
+        for (let i = 0; i < interpretation.length; i++) {
+                // Interpreted relation i
+                let relations = interpretation[i];
+
+                // Check spatial relations
+                /* if (intpr.relation == "holding") {
+                    return (state.holding != null) && (state.holding.charAt(0) == intpr.args[0]);
+                }
+                else if (intpr.relation == "on top of" || intpr.relation == "inide") {
+                    // directly on top
+                    ;
+                }
+                else if (intpr.relation == "above") {
+                    // somewhere above in stack
+                    ;
+                }
+                else if (intpr.relation == "under") {
+                    // somewhere under in stack
+                    ;
+                }
+                else if (intpr.relation == "beside") {
+                    // adjacent stacks
+                    ;
+                }
+                else if (intpr.relation == "left of") {
+                    // somewhere to the left
+                    ;
+                }
+                else if (intpr.relation == "right of") {
+                    // somewhere to the right
+                    ;
+                }
+                else {
+                    console.log("Error: No relation found!");
+                }*/
+        }
+        return false;
+    }
 }
+
