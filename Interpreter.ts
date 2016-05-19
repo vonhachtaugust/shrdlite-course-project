@@ -213,49 +213,18 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
 }
 
 
-	 // Imply the physical laws
+	// Imply the physical laws
     function assertPhysicalLaws(combs : any, relation : any, state : any) {
+        
         // return value
         let result : any = [];
-        
+            
         for (let i = 0; i < combs.length; i++) {
             let targetTag = combs[i][0];
             let relativeTag = combs[i][1];
-            let target = state.objects[targetTag];
-            let relative;
-            if (relativeTag == "floor") {
-                relative = {"size":null,"color":null,"form":"floor"};
-            } else {
-                relative = state.objects[relativeTag];
-            }
             
-            if (targetTag != relativeTag) {
-                if (relation == "inside") {
-                    if (!(target.size == "large" && relative.size == "small")) {
-                        if (!((target.form == "pyramid" || target.form == "plank" || target.form == "box") && target.size == relative.size)) {
-                            if (!(target.size == "large" && relative.size == "small")
-                                && relative.form == "box") {
-                                result.push(combs[i]);
-                            }
-                        }
-                    }
-                } else if (relation == "ontop") {
-                    if (!(target.size == "large" && relative.size == "small")) {
-                        if (target.form == "box") {
-                            if (relative.form == "brick" && relative.size == "large") {
-                                result.push(combs[i]);
-                            }
-                        } else if (target.form == "ball") {
-                            if (relativeTag == "floor" || relative.form == "floor" || relative.form == "box") {
-                                result.push(combs[i]);
-                            }
-                        } else if (!(relative.form == "ball")) {
-                            result.push(combs[i]);
-                        }
-                    }
-                } else {
-                    result.push(combs[i]);
-                }
+            if (checkRelation(relation,[targetTag,relativeTag],state)) {
+                result.push(combs[i]);
             }
             
         }
