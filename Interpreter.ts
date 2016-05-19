@@ -91,7 +91,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         let command = cmd.command; 
         let interpretation : DNFFormula = [];
-        console.log(cmd);
         
         if (command == "take") {
             let targetEntity = cmd.entity;
