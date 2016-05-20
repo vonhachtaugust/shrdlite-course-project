@@ -98,9 +98,11 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
 
             for (let i = 0; i < possibleTargetTags.length; i++) {
                 let possibleTargetTag = possibleTargetTags[i];
-                interpretation.push(
-                    [{polarity: true, relation: "holding", args: [possibleTargetTag]}]
-                );
+                if (checkRelation("holding",[possibleTargetTag],state)) {
+                    interpretation.push(
+                        [{polarity: true, relation: "holding", args: [possibleTargetTag]}]
+                    );
+                }
             }
         } else if (command == "move") {
             // target
