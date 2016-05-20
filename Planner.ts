@@ -92,8 +92,17 @@ module Planner {
         console.log(getReachableStates(state));
         console.log()
 
+        console.log("=================================================");
+
         let stateGraph: StateGraph = new StateGraph();
 
+        console.log("=================================================");
+
+        console.log("A star search");
+        console.log();
+        
+        var heuristic = (n: any) => heuristicFunction(n, interpretation);
+        
         let path = aStarSearch(
             stateGraph,
             state,
@@ -101,12 +110,13 @@ module Planner {
             heuristic,
             10
         );
-
+        
+        console.log()
         console.log("aStarSearch output path:");
         console.log(path);
-
-        console.log("=================================================");
         console.log()
+        
+        console.log("=================================================");
 
         // below is the dummy plan generation
         do {
@@ -171,7 +181,7 @@ module Planner {
             for (let j = 0; interpretation.length[i].length; j++) {
                 let rel: string = interpretation[i][j].relation;
                 let args: string[] = interpretation[i][j].args;
-                // fulfill a conjunctive goal
+                // fufill a conjunctive goal
                 if (Interpreter.checkRelation(rel, args, state) && conjunctive(rel, args, interpretation[i][j], state)) {
                     return true;
                 }
@@ -180,22 +190,22 @@ module Planner {
         return false;
     }
 
-    function conjunctive(relation: string, args: string[], interpretation: any, state : WorldState): boolean {
-        // function assumes previous required conditions between number of arguments given a relation etc. are handled. See Interpreter.ts
+    function conjunctive(relation: string, args: string[], interpretation: a ny, state : WorldState): boolean {
+        // function assumes  previous required conditions between number of arguments given a relation etc. are handled. See Interpreter.ts
 
         // for each conjunctive goal
         for (let i = 0; i < interpretation.length; i++) {
             if (relation == "holding") {
                 return (state.holding == interpretation.args[0]);
-            }
-            else if ((relation == "inside") || (relation == "ontop")) {
+             }
+            else if ((relation == "inside") || (relat ion == ") {
                 if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
                     return (Interpreter.stackIndexOf(interpretation.args[0],state) + 1 == Interpreter.stackIndexOf(interpretation.args[1],state));
                 }
                 return false;
             }
-            else if (relation == "above") {
-                if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
+            else if (relation ==  "above") {
+                if (Interpreter.isInSameStack (interpretation.args[0], interpretation.args[1], state)) {
                     return (Interpreter.stackIndexOf(interpretation.args[0],state) > Interpreter.stackIndexOf(interpretation.args[1],state));       
                 }
                 return false;
@@ -205,8 +215,7 @@ module Planner {
                     return (Interpreter.stackIndexOf(interpretation.args[0],state) < Interpreter.stackIndexOf(interpretation.args[1],state));
                 }
                 return false;
-            }
-            else if (relation == "beside") {
+            }        else if (relation == "beside") {
                 return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state))
                     || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
             }
@@ -225,8 +234,137 @@ module Planner {
     /**
      * function for calculating the heuristic for state 's'
      */
-    var heuristic = function(s: WorldState) {
-        return 0;
+    function heuristicFunction(state: WorldState, interpretation : Interpreter.DNFFormula) : number {
+        
+        console.log()
+        console.log("in heuristicFunction")
+        console.log("state:")
+        console.log(state)
+        console.log("f:");
+        console.log(interpretation.toString());
+        console.log();
+        
+        let disjGoals : Interpreter.Literal[][] = interpretation;
+        
+        // result heuristic will be the minimum of the heuristics for the disjunctions
+        let minHeuristic = Infinity;
+        
+        // assumes that interpretation is a list of disjunctive goals
+        for (let i = 0; i < disjGoals.length; i++) {
+            
+            // list of conjunctions for this disjunctive goal
+            let thisDisjunction : Interpreter.Literal[] = disjGoals[i];
+            
+            // heuristic for this disjunction will be the sum of the heuristics for the conjunctions
+            let thisHeuristic = 0;
+            
+            for (let j = 0; j < thisDisjunction.length; j++) {
+                let thisConjunction : Interpreter.Literal = thisDisjunction[j];
+                console.log("in heuristicFunction")
+                console.log("thisConjunction:")
+                console.log(thisConjunction)
+                console.log()
+                thisHeuristic += estimatedPathLength(state,thisConjunction)
+            }
+            
+            if (thisHeuristic < minHeuristic) {
+                minHeuristic = thisHeuristic;
+            }
+        }
+        
+        console.log("minHeuristic: " + minHeuristic);
+        
+        return minHeuristic;
+    }
+    
+    function estimatedPathLength(state : WorldState, condition : Interpreter.Literal) : number {
+        
+        // return value
+        let result : number = 0;
+        
+        //let polarity = condition.polarity; // assumed to be true for now
+        let rel = condition.relation;
+        let args = condition.args;
+        
+        if (rel == "inside") {
+            rel = "ontop";
+        }
+        
+        if (rel == "holding") {
+            if (args.length == 1) {
+                
+               let taretTag = args[0];
+                let targetStacIndex = Interpreter.stackIndex(targetTag, state);
+                let targeStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
+                
+                // move arm to right stack
+                result += Math.abs(state.arm - targetStackIndex);
+                
+                // number of obstacles in the of picking up 'target'
+                if (typeof state.stacks[targetStackIndex] === "undefined") {
+                    console.log("state.stacks[targetStackIndex] is undefined");
+                    console.log("targetTag: " + targetTag);
+                    console.log(condition);
+                    console.log("targetStackIndex: " + targetStackIndex);
+                    console.log("stack: " + state.stacks[targetStackIndex]);
+                    console.log(state);
+                    console.log();
+                }
+    
+                let numObstacles = state.stacks[targetStackIndex].length - targetStackIndexOf;
+                
+                / for each obstacle, pick up (+1), move away (+1), drop (+1) and move back (+1), (+4) in total
+                result += 4 * numObstacles;
+                
+                // pick up 'target'
+                result++;
+    
+            } else {
+               console.error("estimatedPathLengt h() got conditi on 'holding' with a rgs: " + args)
+            }
+        } else if (rel == "ontop") {
+            if (args.length == 2) {
+                
+                // target entity
+                let targetTag = args[0];
+                let targetStackIndex = Interpreter.stackIndex(targetTag, state);
+                
+                // relative entity
+                let relativeTag = args[1];
+                let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
+                
+                // clearing the way for relative corresponds to holding it, but skipping picking it up
+                if (relativeTag != "floor") {
+                    let holdingRelativeLiteral : Interpreter.Literal = {
+                        polarity: true,
+                        relation: "holding",
+                        args: [relativeTag]
+                    };
+                    result += estimatedPathLength(state, holdingRelativeLiteral) - 1;
+                }
+                
+                // heuristic for picking up 'targetTag'
+                let holdingTargetLiteral : Interpreter.Literal = {
+                    polarity: true,
+                    relation: "holding",
+                    args: [targetTag]
+                };
+                result += estimatedPathLength(state, holdingTargetLiteral);
+                
+                // move arm to target stack
+                result += Math.abs(relativeStackIndex - targetStackIndex);
+                
+                // drop object
+                result++;
+                
+            } else {
+                console.error("estimatedPathLength() got condition 'holding' with args: " + args)
+            }
+        } else {
+            console.error("estimatedPathLength() got state with relation: " + rel);
+        }
+        
+        return result;
     }
 
     class StateGraph implements Graph<WorldState> {
