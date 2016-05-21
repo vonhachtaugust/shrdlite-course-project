@@ -74,9 +74,9 @@ function aStarSearch<Node>(
     ): SearchResult<Node> {
     var result : SearchResult<Node>;
     
-    let closedSet : collections.Set<Node> = new collections.Set<Node>();
+    let closedSet : collections.Set<Node> = new collections.Set<Node>(JSON.stringify);
     
-    let gScore : collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>();
+    let gScore : collections.Dictionary<Node, number> = new collections.Dictionary<Node, number>(JSON.stringify);
     gScore.setValue(start,0);
     
     let openSetHeap : collections.Heap<NodeScore> = new collections.Heap<NodeScore>(comperator);
@@ -85,13 +85,13 @@ function aStarSearch<Node>(
         score: heuristics(start)
     });
     
-    let cameFrom : collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>();
+    let cameFrom : collections.Dictionary<Node, Node> = new collections.Dictionary<Node, Node>(JSON.stringify);
     
     let maxTime : number = Date.now() + timeout*1000;
     while (openSetHeap.peek() && Date.now() < maxTime) {
       let rootNode = openSetHeap.removeRoot();
       let current = rootNode.node;
-
+      
       if (goal(current)) {
         result = reconstructPath(
           cameFrom,
@@ -118,9 +118,11 @@ function aStarSearch<Node>(
         }
         
         // The cost from start to this neighbour
-        let tentative_gScore = gScore.getValue(current) + thisEdge.cost;
+        let tentative_gScore : number = gScore.getValue(current) + thisEdge.cost;
 
-        if (tentative_gScore >= gScore.getValue(thisNeighbour)) {
+        let thisNeighbourGScore = gScore.getValue(thisNeighbour);
+        if (typeof thisNeighbourGScore === "undefined") thisNeighbourGScore = Infinity;
+        if (tentative_gScore >= thisNeighbourGScore) {
           // This path is more costly
           continue;
         }
@@ -131,9 +133,11 @@ function aStarSearch<Node>(
         // update predecessor map
         cameFrom.setValue(thisNeighbour, current);
         
+        let thisNeighbourHeuristic : number = heuristics(thisNeighbour);
+
         openSetHeap.add({
           node: thisNeighbour,
-          score: tentative_gScore + heuristics(thisNeighbour)
+          score: tentative_gScore + thisNeighbourHeuristic
         });
       }
     }

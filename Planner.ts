@@ -77,30 +77,8 @@ module Planner {
      */
     function planInterpretation(interpretation: Interpreter.DNFFormula, state: WorldState): string[] {
 
-        var isGoal = (n: any) => goal(interpretation, n);
-
-        // This function returns a dummy plan involving a random stack
-
-        // development debug prints
-        console.log(interpretation);
-        console.log("=================================================");
-
-        console.log("current state:");
-        console.log(state);
-        console.log();
-        console.log("reachable states:")
-        console.log(getReachableStates(state));
-        console.log()
-
-        console.log("=================================================");
-
         let stateGraph: StateGraph = new StateGraph();
-
-        console.log("=================================================");
-
-        console.log("A star search");
-        console.log();
-        
+        var isGoal = (n: any) => goal(interpretation, n);
         var heuristic = (n: any) => heuristicFunction(n, interpretation);
         
         let path = aStarSearch(
@@ -111,56 +89,42 @@ module Planner {
             10
         );
         
-        console.log()
-        console.log("aStarSearch output path:");
-        console.log(path);
-        console.log()
+        let stateSequence = path.path;
+        stateSequence.unshift(stateSequence);
         
-        console.log("=================================================");
-
-        // below is the dummy plan generation
-        do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
-        var plan: string[] = [];
-
-        // First move the arm to the leftmost nonempty stack
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
-            }
-        } else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
-                plan.push("r");
-            }
-        }
-
-        // Then pick up the object2
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length - 1];
-        plan.push("Picking up the " + state.objects[obj].form,
-            "p");
-
-        if (pickstack < state.stacks.length - 1) {
-            // Then move to the rightmost stack
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length - 1; i++) {
-                plan.push("r");
-            }
-
-            // Then move back
-            plan.push("Moving back");
-            for (var i = state.stacks.length - 1; i > pickstack; i--) {
-                plan.push("l");
+        return pathToPlan(stateSequence);
+    }
+    
+    function pathToPlan(path : WorldState[]) : string[] {
+        
+        // return value
+        let result : string[] = [];
+        
+        for (let i = 1; i < path.length; i++) {
+            let currentState = path[i-1];
+            let nextState = path[i];
+            
+            if (currentState.arm < nextState.arm) {
+                // moved arm to the right
+                result.push("r");
+            } else if (currentState.arm > nextState.arm) {
+                // moved arm to the left
+                result.push("l");
+            } else {
+                // dropped or picked up
+                if (currentState.holding != null && nextState.holding == null) {
+                    // dropped
+                    result.push("d");
+                } else if (currentState.holding == null && nextState.holding != null) {
+                    // picked up
+                    result.push("p");
+                } else {
+                    console.log("pathToPlan() got invalid path: " + path);
+                }
             }
         }
-
-        // Finally put it down again
-        plan.push("Dropping the " + state.objects[obj].form,
-            "d");
-
-        return plan;
+        
+        return result;
     }
 
     /**
@@ -170,54 +134,57 @@ module Planner {
         // for each found interpretation
         for (let i = 0; i < interpretation.length; i++) {
             // for each disjunctive goal
+            let thisDisjRes = true;
             for (let j = 0; j < interpretation[i].length; j++) {
                 let rel: string = interpretation[i][j].relation;
                 let args: string[] = interpretation[i][j].args;
                 // fufill a conjunctive goal
-                if (Interpreter.checkRelation(rel, args, state) && conjunctive(rel, args, interpretation[i][j], state)) {
-                    return true;
-                }
+                let thisConjRes = Planner.conjunctive(interpretation[i][j], state);
+                thisDisjRes = thisDisjRes && thisConjRes;
+            }
+            if (thisDisjRes) {
+                return true;
             }
         }
         return false;
     }
 
-    function conjunctive(relation: string, args: string[], interpretation: any, state : WorldState): boolean {
+    export function conjunctive(interpretation: any, state : WorldState): boolean {
         // function assumes  previous required conditions between number of arguments given a relation etc. are handled. See Interpreter.ts
 
-        // for each conjunctive goal
-        for (let i = 0; i < interpretation.length; i++) {
-            if (relation == "holding") {
-                return (state.holding == interpretation.args[0]);
-             }
-            else if ((relation == "inside") || (relation == "ontop")) {
-                if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
-                    return (Interpreter.stackIndexOf(interpretation.args[0],state) + 1 == Interpreter.stackIndexOf(interpretation.args[1],state));
-                }
-                return false;
-            }
-            else if (relation ==  "above") {
-                if (Interpreter.isInSameStack (interpretation.args[0], interpretation.args[1], state)) {
-                    return (Interpreter.stackIndexOf(interpretation.args[0],state) > Interpreter.stackIndexOf(interpretation.args[1],state));       
-                }
-                return false;
-            }
-            else if (relation == "under") {
-                if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
-                    return (Interpreter.stackIndexOf(interpretation.args[0],state) < Interpreter.stackIndexOf(interpretation.args[1],state));
-                }
-                return false;
-            }        else if (relation == "beside") {
-                return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state))
-                    || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
-            }
-            else if (relation == "leftof") {
-                return (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
-            }
-            else if (relation == "rightof") {
-                return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state));
-            }     
+        let relation = interpretation.relation;
+
+        if (relation == "holding") {
+            return (state.holding == interpretation.args[0]);
         }
+        else if ((relation == "inside") || (relation == "ontop")) {
+            if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
+                return (Interpreter.stackIndexOf(interpretation.args[0],state) - 1 == Interpreter.stackIndexOf(interpretation.args[1],state));
+            }
+            return false;
+        }
+        else if (relation ==  "above") {
+            if (Interpreter.isInSameStack (interpretation.args[0], interpretation.args[1], state)) {
+                return (Interpreter.stackIndexOf(interpretation.args[0],state) > Interpreter.stackIndexOf(interpretation.args[1],state));       
+            }
+            return false;
+        }
+        else if (relation == "under") {
+            if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
+                return (Interpreter.stackIndexOf(interpretation.args[0],state) < Interpreter.stackIndexOf(interpretation.args[1],state));
+            }
+            return false;
+        }        else if (relation == "beside") {
+            return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state))
+                || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+        }
+        else if (relation == "leftof") {
+            return (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+        }
+        else if (relation == "rightof") {
+            return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state));
+        }
+        
         // the relation doesn't exist.
         return false;
     }
@@ -227,6 +194,11 @@ module Planner {
      * function for calculating the heuristic for state 's'
      */
     function heuristicFunction(state: WorldState, interpretation : Interpreter.DNFFormula) : number {
+        
+        let isGoal = goal(interpretation, state);
+        if (isGoal) {
+            return 0;
+        }
         
         let disjGoals : Interpreter.Literal[][] = interpretation;
         
@@ -272,6 +244,12 @@ module Planner {
             if (args.length == 1) {
                 
                 let targetTag = args[0];
+                
+                if (targetTag == state.holding) {
+                    // already holding desired object
+                    return 0;
+                }
+                
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
                 let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
                 
