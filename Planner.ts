@@ -164,21 +164,13 @@ module Planner {
     }
 
     /**
-     * function for determing if state 's' is goal
-     */
-    var isGoal = function(s: WorldState) {
-        return undefined;
-    }
-
-    /**
      * function used by isGoal to check the current world state with the interpretation
      */
-
     function goal(interpretation: Interpreter.DNFFormula, state: WorldState): boolean {
         // for each found interpretation
-        for (let i = 0; interpretation.length; i++) {
+        for (let i = 0; i < interpretation.length; i++) {
             // for each disjunctive goal
-            for (let j = 0; interpretation.length[i].length; j++) {
+            for (let j = 0; j < interpretation[i].length; j++) {
                 let rel: string = interpretation[i][j].relation;
                 let args: string[] = interpretation[i][j].args;
                 // fufill a conjunctive goal
@@ -190,7 +182,7 @@ module Planner {
         return false;
     }
 
-    function conjunctive(relation: string, args: string[], interpretation: a ny, state : WorldState): boolean {
+    function conjunctive(relation: string, args: string[], interpretation: any, state : WorldState): boolean {
         // function assumes  previous required conditions between number of arguments given a relation etc. are handled. See Interpreter.ts
 
         // for each conjunctive goal
@@ -198,7 +190,7 @@ module Planner {
             if (relation == "holding") {
                 return (state.holding == interpretation.args[0]);
              }
-            else if ((relation == "inside") || (relat ion == ") {
+            else if ((relation == "inside") || (relation == "ontop")) {
                 if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
                     return (Interpreter.stackIndexOf(interpretation.args[0],state) + 1 == Interpreter.stackIndexOf(interpretation.args[1],state));
                 }
@@ -236,14 +228,6 @@ module Planner {
      */
     function heuristicFunction(state: WorldState, interpretation : Interpreter.DNFFormula) : number {
         
-        console.log()
-        console.log("in heuristicFunction")
-        console.log("state:")
-        console.log(state)
-        console.log("f:");
-        console.log(interpretation.toString());
-        console.log();
-        
         let disjGoals : Interpreter.Literal[][] = interpretation;
         
         // result heuristic will be the minimum of the heuristics for the disjunctions
@@ -260,10 +244,6 @@ module Planner {
             
             for (let j = 0; j < thisDisjunction.length; j++) {
                 let thisConjunction : Interpreter.Literal = thisDisjunction[j];
-                console.log("in heuristicFunction")
-                console.log("thisConjunction:")
-                console.log(thisConjunction)
-                console.log()
                 thisHeuristic += estimatedPathLength(state,thisConjunction)
             }
             
@@ -271,8 +251,6 @@ module Planner {
                 minHeuristic = thisHeuristic;
             }
         }
-        
-        console.log("minHeuristic: " + minHeuristic);
         
         return minHeuristic;
     }
@@ -293,27 +271,17 @@ module Planner {
         if (rel == "holding") {
             if (args.length == 1) {
                 
-               let taretTag = args[0];
-                let targetStacIndex = Interpreter.stackIndex(targetTag, state);
-                let targeStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
+                let targetTag = args[0];
+                let targetStackIndex = Interpreter.stackIndex(targetTag, state);
+                let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
                 
                 // move arm to right stack
                 result += Math.abs(state.arm - targetStackIndex);
                 
                 // number of obstacles in the of picking up 'target'
-                if (typeof state.stacks[targetStackIndex] === "undefined") {
-                    console.log("state.stacks[targetStackIndex] is undefined");
-                    console.log("targetTag: " + targetTag);
-                    console.log(condition);
-                    console.log("targetStackIndex: " + targetStackIndex);
-                    console.log("stack: " + state.stacks[targetStackIndex]);
-                    console.log(state);
-                    console.log();
-                }
-    
-                let numObstacles = state.stacks[targetStackIndex].length - targetStackIndexOf;
+                let numObstacles = state.stacks[targetStackIndex].length - (targetStackIndexOf + 1);
                 
-                / for each obstacle, pick up (+1), move away (+1), drop (+1) and move back (+1), (+4) in total
+                // for each obstacle, pick up (+1), move away (+1), drop (+1) and move back (+1), (+4) in total
                 result += 4 * numObstacles;
                 
                 // pick up 'target'
