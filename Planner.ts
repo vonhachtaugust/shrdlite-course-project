@@ -130,14 +130,12 @@ module Planner {
     /**
      * function used by isGoal to check the current world state with the interpretation
      */
-    function goal(interpretation: Interpreter.DNFFormula, state: WorldState): boolean {
+     function goal(interpretation: Interpreter.DNFFormula, state: WorldState): boolean {
         // for each found interpretation
         for (let i = 0; i < interpretation.length; i++) {
             // for each disjunctive goal
             let thisDisjRes = true;
             for (let j = 0; j < interpretation[i].length; j++) {
-                let rel: string = interpretation[i][j].relation;
-                let args: string[] = interpretation[i][j].args;
                 // fufill a conjunctive goal
                 let thisConjRes = Planner.conjunctive(interpretation[i][j], state);
                 thisDisjRes = thisDisjRes && thisConjRes;
@@ -151,8 +149,8 @@ module Planner {
 
     export function conjunctive(interpretation: any, state : WorldState): boolean {
         // function assumes  previous required conditions between number of arguments given a relation etc. are handled. See Interpreter.ts
-
         let relation = interpretation.relation;
+        let args = interpretation.args;
 
         if (relation == "holding") {
             return (state.holding == interpretation.args[0]);
@@ -164,7 +162,7 @@ module Planner {
             return false;
         }
         else if (relation ==  "above") {
-            if (Interpreter.isInSameStack (interpretation.args[0], interpretation.args[1], state)) {
+            if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
                 return (Interpreter.stackIndexOf(interpretation.args[0],state) > Interpreter.stackIndexOf(interpretation.args[1],state));       
             }
             return false;
@@ -176,7 +174,7 @@ module Planner {
             return false;
         }        else if (relation == "beside") {
             return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state))
-                || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
         }
         else if (relation == "leftof") {
             return (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
@@ -184,7 +182,6 @@ module Planner {
         else if (relation == "rightof") {
             return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state));
         }
-        
         // the relation doesn't exist.
         return false;
     }
