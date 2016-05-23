@@ -177,10 +177,10 @@ module Planner {
             || (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
         }
         else if (relation == "leftof") {
-            return (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
+            return (Interpreter.stackIndex(args[0], state) + 1 == Interpreter.stackIndex(args[1], state));
         }
         else if (relation == "rightof") {
-            return (Interpreter.stackIndex(args[0], state) + 1 == Interpreter.stackIndex(args[1], state));
+            return (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
         }
         // the relation doesn't exist.
         return false;
