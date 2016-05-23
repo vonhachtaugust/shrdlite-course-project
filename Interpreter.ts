@@ -122,6 +122,27 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
                 );
             }
+        } else if (command == "put") {
+            // target
+            let targetTag = state.holding;
+            
+            // relative
+            let relativeEntity = cmd.location.entity;
+            let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
+            
+            console.log("in interpretCommand()")
+            console.log("possibleRelativeTags: ")
+            console.log(possibleRelativeTags)
+            
+            let combs : string[][] = cartesianProd([targetTag],possibleRelativeTags);
+            combs = assertPhysicalLaws(combs,cmd.location.relation,state);
+            
+            for (let i = 0; i < combs.length; i++) {
+                let comb = combs[i];
+                interpretation.push(
+                    [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
+                );
+            }
         }
 
         if (interpretation.length == 0) return undefined;
@@ -242,7 +263,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);
             if (stackIndexOf > -1) return stackIndexOf;
         }
-        return -1;
+        return null;
     }
     
 
@@ -254,7 +275,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);
             if (stackIndexOf > -1) return i;
         }
-        return -1;
+        return null;
     }
     
  
