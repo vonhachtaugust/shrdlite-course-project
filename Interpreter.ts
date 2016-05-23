@@ -263,7 +263,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);
             if (stackIndexOf > -1) return stackIndexOf;
         }
-        return null;
+        return undefined;
     }
     
 
@@ -275,7 +275,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);
             if (stackIndexOf > -1) return i;
         }
-        return null;
+        return undefined;
     }
     
  
