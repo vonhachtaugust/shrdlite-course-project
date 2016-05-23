@@ -153,34 +153,34 @@ module Planner {
         let args = interpretation.args;
 
         if (relation == "holding") {
-            return (state.holding == interpretation.args[0]);
+            return (state.holding == args[0]);
         }
         else if ((relation == "inside") || (relation == "ontop")) {
-            if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
-                return (Interpreter.stackIndexOf(interpretation.args[0],state) - 1 == Interpreter.stackIndexOf(interpretation.args[1],state));
+            if (Interpreter.isInSameStack(args[0], args[1], state)) {
+                return (Interpreter.stackIndexOf(args[0], state) - 1 == Interpreter.stackIndexOf(args[1], state));
             }
             return false;
         }
         else if (relation ==  "above") {
-            if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
-                return (Interpreter.stackIndexOf(interpretation.args[0],state) > Interpreter.stackIndexOf(interpretation.args[1],state));       
+            if (Interpreter.isInSameStack(args[0], args[1], state)) {
+                return (Interpreter.stackIndexOf(args[0], state) > Interpreter.stackIndexOf(args[1], state));       
             }
             return false;
         }
         else if (relation == "under") {
-            if (Interpreter.isInSameStack(interpretation.args[0], interpretation.args[1], state)) {
-                return (Interpreter.stackIndexOf(interpretation.args[0],state) < Interpreter.stackIndexOf(interpretation.args[1],state));
+            if (Interpreter.isInSameStack(args[0], args[1], state)) {
+                return (Interpreter.stackIndexOf(args[0], state) < Interpreter.stackIndexOf(args[1], state));
             }
             return false;
         }        else if (relation == "beside") {
-            return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state))
-            || (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            return (Interpreter.stackIndex(args[0], state) + 1 == Interpreter.stackIndex(args[1], state))
+            || (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
         }
         else if (relation == "leftof") {
-            return (Interpreter.stackIndex(interpretation.args[0], state) - 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            return (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
         }
         else if (relation == "rightof") {
-            return (Interpreter.stackIndex(interpretation.args[0], state) + 1 == Interpreter.stackIndex(interpretation.args[1], state));
+            return (Interpreter.stackIndex(args[0], state) + 1 == Interpreter.stackIndex(args[1], state));
         }
         // the relation doesn't exist.
         return false;
