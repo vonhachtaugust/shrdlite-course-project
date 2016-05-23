@@ -90,7 +90,12 @@ module Planner {
         );
         
         let stateSequence = path.path;
-        stateSequence.unshift(stateSequence);
+        console.log("in planInterpretation")
+        console.log("path.path: ");
+        console.log(path.path);
+        stateSequence.unshift(state);
+        console.log("stateSequence: ")
+        console.log(stateSequence);
         
         return pathToPlan(stateSequence);
     }
