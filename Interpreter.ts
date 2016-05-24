@@ -258,6 +258,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     // returns the index of 'thisPossibleTargetTag' in it's respective stack
     export function stackIndexOf(thisPossibleTargetTag : string, state : WorldState) : number {
         let stacks : string[][] = state.stacks;
+        
+        if (thisPossibleTargetTag == "floor") return -1;
 
         for (let i = 0; i < stacks.length; i++) {
             let stackIndexOf = stacks[i].indexOf(thisPossibleTargetTag);

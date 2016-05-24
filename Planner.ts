@@ -86,7 +86,7 @@ module Planner {
             state,
             isGoal,
             heuristic,
-            10
+            4
         );
         
         let stateSequence = path.path;
@@ -119,7 +119,7 @@ module Planner {
                     // picked up
                     result.push("p");
                 } else {
-                    console.log("pathToPlan() got invalid path: " + path);
+                    console.error("pathToPlan() got invalid path: " + path);
                 }
             }
         }
@@ -233,6 +233,7 @@ module Planner {
         let rel = condition.relation;
         let args = condition.args;
         
+        // 'inside' has same estimated path length as 'ontop'
         if (rel == "inside") {
             rel = "ontop";
         }
@@ -250,10 +251,10 @@ module Planner {
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
                 let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
                 
-                // move arm to right stack
+                // move arm to target stack
                 result += Math.abs(state.arm - targetStackIndex);
                 
-                // number of obstacles in the of picking up 'target'
+                // number of obstacles in the way of picking up 'target'
                 let numObstacles = state.stacks[targetStackIndex].length - (targetStackIndexOf + 1);
                 
                 // for each obstacle, pick up (+1), move away (+1), drop (+1) and move back (+1), (+4) in total
@@ -263,7 +264,7 @@ module Planner {
                 result++;
     
             } else {
-               console.error("estimatedPathLengt h() got conditi on 'holding' with a rgs: " + args)
+               console.error("estimatedPathLengt h() got condition 'holding' with a rgs: " + args)
             }
         } else if (rel == "ontop") {
             if (args.length == 2) {
@@ -272,32 +273,61 @@ module Planner {
                 let targetTag = args[0];
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
                 
+                // if holding the target object, its stack index is considered the arm position
+                if (state.holding == targetTag) {
+                    targetStackIndex = state.arm;
+                }
+                
                 // relative entity
                 let relativeTag = args[1];
                 let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
                 
-                // clearing the way for relative corresponds to holding it, but skipping picking it up
-                if (relativeTag != "floor") {
+                // clear the stack from everything above relative
+                if (relativeTag == "floor") {
+                    // assume that the object will be placed under the shortest stack
+                    let stackLengths = state.stacks.map(function(v,i,a){return v.length});
+                    relativeStackIndex = argmin(stackLengths, targetStackIndex);
+                    let numElsInShortestStack = state.stacks[relativeStackIndex].length;
+                    
+                    if (numElsInShortestStack > 0) {
+                        // need to clear the shortest stack
+                    
+                        // move the arm to the shortest stack
+                        result += Math.abs(relativeStackIndex - state.arm);
+                        
+                        // 4 moves for each stacked object
+                        result += 4 * numElsInShortestStack;
+                    }
+                } else {
                     let holdingRelativeLiteral : Interpreter.Literal = {
                         polarity: true,
                         relation: "holding",
                         args: [relativeTag]
                     };
-                    result += estimatedPathLength(state, holdingRelativeLiteral) - 1;
+                    // clearing the way for relative corresponds to holding it, but skipping picking it up
+                    result += estimatedPathLength(state, holdingRelativeLiteral, true) - 1;
                 }
                 
-                // heuristic for picking up 'targetTag'
-                let holdingTargetLiteral : Interpreter.Literal = {
-                    polarity: true,
-                    relation: "holding",
-                    args: [targetTag]
-                };
-                result += estimatedPathLength(state, holdingTargetLiteral);
+                //
+                // target should now be accessible
+                //
+                
+                // if not already holding target
+                if (state.holding != targetTag) {
+                    
+                    // estimated path length for picking up 'targetTag'
+                    let holdingTargetLiteral : Interpreter.Literal = {
+                        polarity: true,
+                        relation: "holding",
+                        args: [targetTag]
+                    };
+                    result += estimatedPathLength(state, holdingTargetLiteral, true);
+                }
                 
                 // move arm to target stack
                 result += Math.abs(relativeStackIndex - targetStackIndex);
                 
-                // drop object
+                // drop the object
                 result++;
                 
             } else {
@@ -421,16 +451,74 @@ module Planner {
 
     /**
      * used for cloning objects
+     * 
+     * @param obj the object to clone
      */
-    function cloneObject(obj) {
+    function cloneObject(obj) : typeof obj {
         if (obj === null || typeof obj !== 'object') {
             return obj;
         }
-        var temp = obj.constructor();
+        var temp : typeof obj = obj.constructor();
         for (var key in obj) {
             temp[key] = cloneObject(obj[key]);
         }
         return temp;
+    }
+    
+    /**
+     * mathematical min over the number in 'vs'
+     * 
+     * @param vs the number through which to search
+     */
+    export function min(vs : number[]) : number {
+        
+        // return value
+        let min : number = Infinity;
+        
+        for (let i = 0; i < vs.length; i++) {
+            if (vs[i] < min) {
+                min = vs[i];
+            }
+        }
+        
+        return min;
+    }
+    
+    /**
+     * mathematical argmin over the number in 'vs'
+     * 
+     * @param vs the number through which to search
+     * @param startPos the place in the list from which to initiate circular search
+     */
+    export function argmin(vs : number[], startPos? : number) : number {
+        
+        // return value
+        let argmin : number;
+        
+        // minimum so far
+        let min = Infinity;
+        
+        if (typeof startPos == "undefined") {
+            startPos = 0;
+        }
+        
+        let ns : collections.Queue<number> = new collections.Queue<number>();
+        ns.enqueue(startPos)
+        while (ns.size() > 0) {
+            let i = ns.dequeue();
+            if (vs[i] < min) {
+                argmin = i;
+                min = vs[i];
+            }
+            if (i >= startPos && i+1 < vs.length) {
+                ns.enqueue(i+1);
+            }
+            if (i <= startPos && i-1 >= 0) {
+                ns.enqueue(i-1);
+            }
+        }
+        
+        return argmin;
     }
 
 }
