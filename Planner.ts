@@ -123,7 +123,6 @@ module Planner {
                 }
             }
         }
-        
         return result;
     }
 
@@ -196,7 +195,7 @@ module Planner {
         if (isGoal) {
             return 0;
         }
-        
+
         let disjGoals : Interpreter.Literal[][] = interpretation;
         
         // result heuristic will be the minimum of the heuristics for the disjunctions
@@ -220,7 +219,6 @@ module Planner {
                 minHeuristic = thisHeuristic;
             }
         }
-        
         return minHeuristic;
     }
     
@@ -228,19 +226,24 @@ module Planner {
         
         // return value
         let result : number = 0;
-        
+
         //let polarity = condition.polarity; // assumed to be true for now
         let rel = condition.relation;
         let args = condition.args;
-        
+
+        if (rel == undefined || args == undefined) {
+            console.error("Arguments = " + args + " | " + "relation = " + rel);
+        }
+
         // 'inside' has same estimated path length as 'ontop'
         if (rel == "inside") {
             rel = "ontop";
         }
-        
-        if (rel == "holding") {
+
+        if (rel == "holding") 
+        {
             if (args.length == 1) {
-                
+
                 let targetTag = args[0];
                 
                 if (targetTag == state.holding) {
@@ -262,13 +265,63 @@ module Planner {
                 
                 // pick up 'target'
                 result++;
-    
             } else {
-               console.error("estimatedPathLengt h() got condition 'holding' with a rgs: " + args)
+                console.error("estimatedPathLengt h() got condition 'holding' with args: " + args)
             }
-        } else if (rel == "ontop") {
+        }
+        else if (rel == "above" || rel == "under") {
             if (args.length == 2) {
+
+                // target entity
+                let targetTag;
+                // relative entity
+                let relativeTag;
+
+                // if a under b estimated shortest path is b above a 
+                if (rel == "above") {
+                    targetTag = args[0];
+                    relativeTag = args[1];
+                } else {
+                    targetTag = args[1];
+                    relativeTag = args[0];
+                }
+
+                // stack position of target entity, undefined if arm is holding targetTag
+                let targetStackIndex = Interpreter.stackIndex(targetTag, state);
+                // stack position of relative entity, undefined if arm is holding targetTag
+                let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
                 
+                // However, if holding then just move and drop object
+                if (state.holding == targetTag) {
+                    //
+                    // Assumes this object can be drop ontop of underlying object
+                    //
+                    targetStackIndex = state.arm;
+                } else {
+                    // estimated cost for moving arm to stack index of targetTag
+                    result += Math.abs(state.arm - targetStackIndex);
+                
+                    // estimated cost for picking up targetTag i.e. holding it -> see rel == "holding"
+                    let holdingTargetLiteral: Interpreter.Literal = {
+                        polarity: true,
+                        relation: "holding",
+                        args: [targetTag]
+                    };
+                    result += estimatedPathLength(state, holdingTargetLiteral);
+                }
+                // estimated cost for moving targetTag to stack index of relativeTag
+                result += Math.abs(targetStackIndex - relativeStackIndex);
+                
+                // drop the object
+                result++;
+            } else {
+                console.error("estimatedPathLength() got condition 'above' with args: " + args);
+            }
+        }
+        else if (rel == "ontop") 
+        {
+            if (args.length == 2) {
+
                 // target entity
                 let targetTag = args[0];
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
@@ -291,7 +344,7 @@ module Planner {
                     
                     if (numElsInShortestStack > 0) {
                         // need to clear the shortest stack
-                    
+
                         // move the arm to the shortest stack
                         result += Math.abs(relativeStackIndex - state.arm);
                         
@@ -314,7 +367,7 @@ module Planner {
                 
                 // if not already holding target
                 if (state.holding != targetTag) {
-                    
+
                     // estimated path length for picking up 'targetTag'
                     let holdingTargetLiteral : Interpreter.Literal = {
                         polarity: true,
@@ -331,12 +384,13 @@ module Planner {
                 result++;
                 
             } else {
-                console.error("estimatedPathLength() got condition 'holding' with args: " + args)
+                console.error("estimatedPathLength() got condition 'ontop' with args: " + args);
             }
-        } else {
-            console.error("estimatedPathLength() got state with relation: " + rel);
         }
-        
+        else 
+        {
+            console.error("estimatedPathLength() got state with relation: " + rel);
+        }2
         return result;
     }
 
