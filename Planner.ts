@@ -390,7 +390,7 @@ module Planner {
         else 
         {
             console.error("estimatedPathLength() got state with relation: " + rel);
-        }2
+        }
         return result;
     }
 
