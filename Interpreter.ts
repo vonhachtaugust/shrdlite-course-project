@@ -108,19 +108,49 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             // target
             let targetEntity = cmd.entity;
             let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
+            let targetQuantifier = targetEntity.quantifier;
             
             // relative
             let relativeEntity = cmd.location.entity;
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
+            let relativeQuantifier = relativeEntity.quantifier;
             
-            let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
-            combs = assertPhysicalLaws(combs,cmd.location.relation,state);
-            
-            for (let i = 0; i < combs.length; i++) {
-                let comb = combs[i];
-                interpretation.push(
-                    [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
-                );
+            if (targetQuantifier == "the") {
+                if (possibleTargetTags.length > 1) {
+                    
+                    // several options for targetEntity, user must specify
+                    let targetTag = promptIdentifyEntityTag(targetEntity, possibleTargetTags, state);
+                    
+                    if (typeof targetTag == "undefined") {
+                        throw new Error("No such entity in the world")
+                    } else {
+                        possibleTargetTags = [targetTag];
+                        targetQuantifier = "any"
+                    }
+                } else {
+                    // there is only one matching object, treat entity quantifier as 'any'
+                    targetQuantifier = "any"
+                }
+            }
+            if (targetQuantifier == "any") {
+                let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
+                combs = assertPhysicalLaws(combs,cmd.location.relation,state);
+                for (let i = 0; i < combs.length; i++) {
+                    let comb = combs[i];
+                    interpretation.push(
+                        [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
+                    );
+                }
+            }
+            if (targetQuantifier == "all") {
+                let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
+                combs = assertPhysicalLaws(combs,cmd.location.relation,state);
+                for (let i = 0; i < combs.length; i++) {
+                    let comb = combs[i];
+                    interpretation.push(
+                        [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
+                    );
+                }
             }
         } else if (command == "put") {
             // target
@@ -149,6 +179,103 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return interpretation;
     }
     
+    function promptIdentifyEntityTag(targetEntity, possibleTargetTags : string[], state : WorldState) : string {
+        
+        let IdFeatures = ["size","color","form"];
+        
+        let cmpTagsFcn = function(a,b) {
+            if (a.score < b.score) {
+                return -1;
+            } else if (a.score == b.score) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+        let featureQueue : collections.PriorityQueue<any> = new collections.PriorityQueue<any>(cmpTagsFcn);
+        
+        for (let i = 0; i < IdFeatures.length; i++) {
+            let thisFeature = IdFeatures[i];
+            
+            // generate a mapping from features values to number of entities with this value
+            let featureValVsNumberMap = getFeatureValVsNumberMap(possibleTargetTags, thisFeature, state);
+            
+            // calculate the number of elements which are uniquely determined by 'thisFeature'
+            let numUniqueIDs = featureValVsNumberMap.values().splice(0)
+                               .filter(function(val,ind,arr){return val == 1;})
+                               .length;
+            
+            if (numUniqueIDs > 0) {
+                featureQueue.enqueue({feature:thisFeature,score:numUniqueIDs});
+            }
+        }
+        
+        while (featureQueue.size() > 0) {
+            let thisFeature = featureQueue.dequeue();
+            thisFeature = thisFeature.feature;
+            targetEntity[thisFeature] = window.prompt("Please specificy the " + thisFeature + " of the object", "red")
+            
+            let newPossibleTargetTags = filterFeatures(targetEntity, state);
+            possibleTargetTags = arrayIntersection(possibleTargetTags, newPossibleTargetTags);
+            
+            if (possibleTargetTags.length <= 1) {
+                break;
+            }
+        }
+        
+        return possibleTargetTags[0];
+    }
+    
+    export function arrayIntersection(xs, ys) {
+        
+        // return value
+        let res = [];
+        
+        let short;
+        let long;
+        if (xs.length < ys.length) {
+            short = xs;
+            long = ys;
+        } else {
+            short = ys;
+            long = xs;
+        }
+        
+        for (let i = 0; i < short.length; i++) {
+            let x = short[i];
+            if (long.indexOf(x) > -1) {
+                res.push(x);
+            }
+        }
+        
+        return res;
+    }
+    
+    function getFeatureValVsNumberMap(possibleTargetTags : string[],
+                                      thisFeature : string,
+                                      state : WorldState
+                                     ) : collections.Dictionary<string,number> {
+        
+        // maps feature values to number of entities that has that value
+        let featureValVsNumberMap : collections.Dictionary<string,number> = new collections.Dictionary<string,number>();
+        
+        for (let j = 0; j < possibleTargetTags.length; j++) {
+            let thisEntityFeatureVal;
+            thisEntityFeatureVal = state.objects[possibleTargetTags[j]][thisFeature];
+            
+            // check if this feature value has occured before
+            if (!featureValVsNumberMap.containsKey(thisEntityFeatureVal)) {
+                featureValVsNumberMap.setValue(thisEntityFeatureVal,1);
+            } else {
+                let currentVal = featureValVsNumberMap.getValue(thisEntityFeatureVal);
+                
+                // save this occurence
+                featureValVsNumberMap.setValue(thisEntityFeatureVal, currentVal + 1);
+            }
+        }
+        
+        return featureValVsNumberMap;
+    }
     
     // returns list of tags for objects satisfying 'entity' in world 'state'
     function getPossibleEntitieTags(entity : any, state : WorldState) : string[] {
@@ -310,7 +437,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let objectMatch : boolean = true;
             for (let i: any = 0; i < matchFeatures.length; i++) {
                 let feature = matchFeatures[i];
-                if (targetObject[feature] == null || targetObject[feature] == "anyform" || targetObject[feature] == "anysize") continue;
+                if (targetObject[feature] == null || targetObject[feature] == "anyform" || targetObject[feature] == "anysize" || targetObject[feature] == "anycolor") continue;
                 if (targetObject[feature] != stateObjects[objTag][feature]) {
                     objectMatch = false;
                     break;
@@ -335,6 +462,26 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         }
         
         return result;
+    }
+    
+    /**
+     * count the number of occurences of 'x' in 'xs'
+     * 
+     * @param x the element search for
+     * @param xs the array in which to search
+     */
+    function count(x, xs) : number {
+        
+        // return value
+        let res = 0;
+        
+        for (let i = 0; i < xs.length; i++) {
+            if (x == xs[i]) {
+                res++;
+            }
+        }
+        
+        return res;
     }
     
     /**
