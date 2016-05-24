@@ -254,6 +254,11 @@ module Planner {
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
                 let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
                 
+                if (typeof targetStackIndex == "undefined" || typeof targetStackIndexOf == "undefined") {
+                    // target is the floor, or non-existing entity
+                    return Infinity;
+                } 
+                
                 // move arm to target stack
                 result += Math.abs(state.arm - targetStackIndex);
                 
