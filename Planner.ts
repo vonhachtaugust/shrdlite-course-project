@@ -305,7 +305,7 @@ module Planner {
                         args: [relativeTag]
                     };
                     // clearing the way for relative corresponds to holding it, but skipping picking it up
-                    result += estimatedPathLength(state, holdingRelativeLiteral, true) - 1;
+                    result += estimatedPathLength(state, holdingRelativeLiteral) - 1;
                 }
                 
                 //
@@ -321,7 +321,7 @@ module Planner {
                         relation: "holding",
                         args: [targetTag]
                     };
-                    result += estimatedPathLength(state, holdingTargetLiteral, true);
+                    result += estimatedPathLength(state, holdingTargetLiteral);
                 }
                 
                 // move arm to target stack
