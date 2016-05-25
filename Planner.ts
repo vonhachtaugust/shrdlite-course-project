@@ -86,7 +86,7 @@ module Planner {
             state,
             isGoal,
             heuristic,
-            4
+            10
         );
         
         let stateSequence = path.path;
