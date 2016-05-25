@@ -392,6 +392,65 @@ module Planner {
                 console.error("estimatedPathLength() got condition 'ontop' with args: " + args);
             }
         }
+
+//////////////////////////////////////////////////////////////////////////////////////
+ // it become true of target object is not already left of 
+ // Target is the object I want to move
+ // Relative is the object I want to put next to
+        else if (rel == "leftof") 
+        {
+            if (args.length == 2) {
+
+                // target entity
+                let targetTag = args[0];
+                let targetStackIndex = Interpreter.stackIndex(targetTag, state);
+                let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
+
+                if (state.holding == targetTag) {
+                    targetStackIndex = state.arm;
+                }
+
+                //if (relativeStackIndex == 0) return Infinity;
+                
+                // estimated path length for picking up 'targetTag'
+                let holdingTargetLiteral : Interpreter.Literal = {
+                    polarity: true,
+                    relation: "holding",
+                    args: [targetTag]
+                };
+                result += estimatedPathLength(state, holdingTargetLiteral);
+                
+                // now holding 'target'
+
+                // relative entity
+                let relativeTag = args[1];
+                let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
+
+                if (state.holding == relativeTag) {
+                    relativeStackIndex = state.arm;
+                }
+
+                // move arm to target stack
+                result += Math.abs(relativeStackIndex - targetStackIndex);
+
+                if (!(result < Infinity)) {
+                    console.error("result: " + result)
+                    console.log(targetTag)
+                    console.log(relativeTag)
+                    console.log(state)
+                    console.log
+                }
+                
+                //to go to neighbour stack
+                result++;
+
+                // drop the object
+                result++;
+                
+            } else {
+                console.error("estimatedPathLength() got condition 'ontop' with args: " + args);
+            }
+        }
         else 
         {
             console.error("estimatedPathLength() got state with relation: " + rel);
