@@ -122,7 +122,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     let targetTag = promptIdentifyEntityTag(targetEntity, possibleTargetTags, state);
                     
                     if (typeof targetTag == "undefined") {
-                        throw new Error("No such entity in the world")
+                        throw "No such entity in the world";
                     } else {
                         possibleTargetTags = [targetTag];
                         targetQuantifier = "any"
@@ -146,7 +146,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 
                 if (cmd.location.relation == "inside") {
                     if (possibleTargetTags.length > possibleRelativeTags.length) {
-                        throw new Error("Not enough boxes");
+                        throw "Not enough boxes";
                     }
                 }
                 
