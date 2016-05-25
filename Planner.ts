@@ -86,8 +86,12 @@ module Planner {
             state,
             isGoal,
             heuristic,
-            4
+            10
         );
+        
+        if (typeof path == "undefined") {
+            throw "Timeout. Maybe no path exists?";
+        }
         
         let stateSequence = path.path;
         stateSequence.unshift(state);

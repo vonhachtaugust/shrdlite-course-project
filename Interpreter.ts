@@ -122,7 +122,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     let targetTag = promptIdentifyEntityTag(targetEntity, possibleTargetTags, state);
                     
                     if (typeof targetTag == "undefined") {
-                        throw new Error("No such entity in the world")
+                        throw "No such entity in the world";
                     } else {
                         possibleTargetTags = [targetTag];
                         targetQuantifier = "any"
@@ -143,14 +143,39 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 }
             }
             if (targetQuantifier == "all") {
-                let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
-                combs = assertPhysicalLaws(combs,cmd.location.relation,state);
-                for (let i = 0; i < combs.length; i++) {
-                    let comb = combs[i];
-                    interpretation.push(
-                        [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
-                    );
+                
+                if (cmd.location.relation == "inside") {
+                    if (possibleTargetTags.length > possibleRelativeTags.length) {
+                        throw "Not enough boxes";
+                    }
                 }
+                
+                let numTargetTags = possibleTargetTags.length;
+                let relativeTagCombs = combinations(possibleRelativeTags, numTargetTags); 
+                
+                for (let i = 0; i < relativeTagCombs.length; i++) {
+                    let thisComb = relativeTagCombs[i];
+                    let thisConjunction = [];
+                    let j = 0;
+                    while (j < possibleTargetTags.length) {
+                        let rel = cmd.location.relation;
+                        let args = [possibleTargetTags[j], thisComb[j]];
+                        if (!checkRelation(rel, args, state)) {
+                            break;
+                        }
+                        thisConjunction.push(
+                            {polarity: true, relation: cmd.location.relation, args: args}
+                        );
+                        j++;
+                    }
+                    if (j != possibleTargetTags.length) {
+                        // one of the conjuctives is false, dont add to DNF formula
+                        continue;
+                    }
+                    
+                    interpretation.push(thisConjunction);
+                }
+                
             }
         } else if (command == "put") {
             // target
@@ -174,7 +199,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 );
             }
         }
-
+        
         if (interpretation.length == 0) return undefined;
         return interpretation;
     }
@@ -250,6 +275,27 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         
         return res;
     }
+    
+    /**
+     * generate a list of all combinations of length 'l' of the elements in 'list'
+     * 
+     * @param list array of elements to combine
+     * @param l length of the combinations
+     */
+    export function combinations(list, l) {
+        var holdingArr = [];
+        var recursiveComb = function(singleSolution) {
+            if (singleSolution.length > l-1) {
+                holdingArr.push(singleSolution);
+                return;
+            }
+            for (var i=0; i < list.length; i++) {
+                recursiveComb(singleSolution.concat([list[i]]));
+            }
+        };
+        recursiveComb([]);
+        return holdingArr;
+    };
     
     function getFeatureValVsNumberMap(possibleTargetTags : string[],
                                       thisFeature : string,
