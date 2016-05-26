@@ -230,11 +230,14 @@ module Planner {
         
         // return value
         let result : number = 0;
-
-        //let polarity = condition.polarity; // assumed to be true for now
+        let polarity = condition.polarity; // assumed to be true for now
         let rel = condition.relation;
         let args = condition.args;
+        let t = 0;
 
+     
+     let size=state.objects[args[0]]["size"];
+     
         if (rel == undefined || args == undefined) {
             console.error("Arguments = " + args + " | " + "relation = " + rel);
         }
@@ -271,7 +274,13 @@ module Planner {
                 
                 // for each obstacle, pick up (+1), move away (+1), drop (+1) and move back (+1), (+4) in total
                 result += 4 * numObstacles;
-                
+
+        // Considering the size of the object
+        if (size== "large"){
+            result+=1;
+            
+        }
+            
                 // pick up 'target'
                 result++;
             } else {
@@ -395,7 +404,7 @@ module Planner {
             } else {
                 console.error("estimatedPathLength() got condition 'ontop' with args: " + args);
             }
-        }        else if (rel == "leftof") 
+        } else if (rel == "leftof" || rel == "rigtof") 
         {
             if (args.length == 2) {
 
@@ -430,14 +439,6 @@ module Planner {
 
                 // move arm to target stack
                 result += Math.abs(relativeStackIndex - targetStackIndex);
-
-                if (!(result < Infinity)) {
-                    console.error("result: " + result)
-                    console.log(targetTag)
-                    console.log(relativeTag)
-                    console.log(state)
-                    console.log
-                }
                 
                 //to go to neighbour stack
                 result++;
@@ -447,49 +448,6 @@ module Planner {
                 
             } else {
                 console.error("estimatedPathLength() got condition 'leftof' with args: " + args);
-            }
-        }else if (rel == "rigtof") 
-        {
-            if (args.length == 2) {
-
-                // target entity
-                let targetTag = args[0];
-                let targetStackIndex = Interpreter.stackIndex(targetTag, state);
-                let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
-
-                if (state.holding == targetTag) {
-                    targetStackIndex = state.arm;
-                }
-                
-                // estimated path length for picking up 'targetTag'
-                        let holdingTargetLiteral : Interpreter.Literal = {
-                    polarity: true,
-                    relation: "holding",
-                    args: [targetTag]
-                };
-                result += estimatedPathLength(state, holdingTargetLiteral);
-                
-                // now holding 'target'
-
-                // relative entity
-                let relativeTag = args[1];
-                let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
-
-                if (state.holding == relativeTag) {
-                    relativeStackIndex = state.arm;
-                }
-
-                // move arm to target stack
-                result += Math.abs(relativeStackIndex - targetStackIndex);
-                
-                //to go to neighbour stack
-        result++;
-
-              // drop the object
-                result++;
-                
-            } else {
-                console.error("estimatedPathLength() got condition 'rightof' with args: " + args);
             }
         }else if (rel == "beside") 
         {
@@ -525,6 +483,7 @@ module Planner {
 
                 // move arm to target stack and prefere the neigbour which is closer to target
                 result += Math.abs(relativeStackIndex - targetStackIndex);
+                // prefer the same side as the target object
                 if ((relativeStackIndex - targetStackIndex)<0){
                     result++;
                 }
