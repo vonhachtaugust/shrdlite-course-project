@@ -404,7 +404,7 @@ module Planner {
             } else {
                 console.error("estimatedPathLength() got condition 'ontop' with args: " + args);
             }
-        } else if (rel == "leftof" || rel == "rigtof") 
+        } else if (rel == "leftof" || rel == "rightof") 
         {
             if (args.length == 2) {
 
