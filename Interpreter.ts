@@ -31,7 +31,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                if (result.interpretation) interpretations.push(result);
+                interpretations.push(result);
             } catch(err) {
                 errors.push(err);
             }
@@ -200,7 +200,9 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             }
         }
         
-        if (interpretation.length == 0) return undefined;
+        if (interpretation.length == 0) {
+            throw "There is no such entity in this world."
+        }
         return interpretation;
     }
     
@@ -479,7 +481,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         let stateObjects : any = state.objects;
         
         for (let objTag in stateObjects) {
-            if (stackIndex(objTag, state) == -1 && state.holding != objTag) continue ;
+            if (stackIndex(objTag, state) == undefined && state.holding != objTag) continue ;
             let objectMatch : boolean = true;
             for (let i: any = 0; i < matchFeatures.length; i++) {
                 let feature = matchFeatures[i];
