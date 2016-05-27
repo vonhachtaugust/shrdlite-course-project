@@ -392,12 +392,12 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                             result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "leftof") {
-                        if (stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state) == -1) 
+                        if (stackIndex(thisPossibleTargetTag,state) < stackIndex(thisRelativeTag,state) ) 
                         {
                             result.push(thisPossibleTargetTag);
                         }
                     } else if (relation == "rightof") {
-                        if (stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state) == 1) 
+                        if (stackIndex(thisPossibleTargetTag,state) > stackIndex(thisRelativeTag,state) ) 
                         {
                             result.push(thisPossibleTargetTag);
                         }

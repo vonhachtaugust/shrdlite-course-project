@@ -140,8 +140,7 @@ module Planner {
             let thisDisjRes = true;
             for (let j = 0; j < interpretation[i].length; j++) {
                 // fufill a conjunctive goal
-                let thisConjRes = Planner.conjunctive(interpretation[i][j], state);
-                thisDisjRes = thisDisjRes && thisConjRes;
+                thisDisjRes = thisDisjRes && Planner.conjunctive(interpretation[i][j], state);
             }
             if (thisDisjRes) {
                 return true;
@@ -180,10 +179,10 @@ module Planner {
             || (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
         }
         else if (relation == "leftof") {
-            return (Interpreter.stackIndex(args[0], state) + 1 == Interpreter.stackIndex(args[1], state));
+            return (Interpreter.stackIndex(args[0], state)  < Interpreter.stackIndex(args[1], state));
         }
         else if (relation == "rightof") {
-            return (Interpreter.stackIndex(args[0], state) - 1 == Interpreter.stackIndex(args[1], state));
+            return (Interpreter.stackIndex(args[0], state)  > Interpreter.stackIndex(args[1], state));
         }
         // the relation doesn't exist.
         return false;
@@ -256,6 +255,8 @@ module Planner {
                 if (targetTag == state.holding) {
                     // already holding desired object
                     return 0;
+                } else if (state.holding != null) {
+                    result++;
                 }
                 
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
@@ -280,7 +281,8 @@ module Planner {
             result+=1;
             
         }
-            
+       // console.log(state.objects[args[0]]);
+
                 // pick up 'target'
                 result++;
             } else {
@@ -407,34 +409,42 @@ module Planner {
         } else if (rel == "leftof" || rel == "rightof") 
         {
             if (args.length == 2) {
-
                 // target entity
                 let targetTag = args[0];
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
                 let targetStackIndexOf = Interpreter.stackIndexOf(targetTag, state);
 
-                if (state.holding == targetTag) {
-                    targetStackIndex = state.arm;
-                }
-
-                //if (relativeStackIndex == 0) return Infinity;
-                
-                // estimated path length for picking up 'targetTag'
-                let holdingTargetLiteral : Interpreter.Literal = {
-                    polarity: true,
-                    relation: "holding",
-                    args: [targetTag]
-                };
-                result += estimatedPathLength(state, holdingTargetLiteral);
-                
-                // now holding 'target'
-
                 // relative entity
                 let relativeTag = args[1];
                 let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
 
+                let oppositeRelation;
+                if (rel == "leftof") {
+                    oppositeRelation = "rightof";
+                } else {
+                    oppositeRelation = "leftof";
+                }
+
                 if (state.holding == relativeTag) {
                     relativeStackIndex = state.arm;
+                    let holdingTargetLiteral : Interpreter.Literal = {
+                        polarity: true,
+                        relation: oppositeRelation,
+                        args: [relativeTag,targetTag]
+                    };
+                    return estimatedPathLength(state, holdingTargetLiteral);
+                }
+
+                if (state.holding == targetTag) {
+                    targetStackIndex = state.arm;
+                } else {
+                // estimated path length for picking up 'targetTag'
+                    let holdingTargetLiteral : Interpreter.Literal = {
+                        polarity: true,
+                        relation: "holding",
+                        args: [targetTag]
+                    };
+                    result += estimatedPathLength(state, holdingTargetLiteral);
                 }
 
                 // move arm to target stack
@@ -449,7 +459,7 @@ module Planner {
             } else {
                 console.error("estimatedPathLength() got condition 'leftof' with args: " + args);
             }
-        }else if (rel == "beside") 
+        } else if (rel == "beside") 
         {
             if (args.length == 2) {
 
@@ -502,6 +512,7 @@ module Planner {
         {
             console.error("estimatedPathLength() got state with relation: " + rel);
         }
+        console.log("result"+result);
         return result;
     }
 
