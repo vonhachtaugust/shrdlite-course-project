@@ -24,10 +24,21 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 * @param currentState The current state of the world.
 * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
 */    
+    var currentParseEvaluated = 0;
+    var whichParseInfoText = "";
     export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
         var errors : Error[] = [];
         var interpretations : InterpretationResult[] = [];
+        if (parses.length > 1) {
+            systemPrint("Your command can be interpreted in several way (multiple parses). All parses will be evaluated.")
+        }
         parses.forEach((parseresult) => {
+            currentParseEvaluated++;
+            if (parses.length > 1) {
+                whichParseInfoText = "Evaluating parse " + currentParseEvaluated + "\n";
+            } else {
+                whichParseInfoText = "";
+            }
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
@@ -36,11 +47,22 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 errors.push(err);
             }
         });
+        currentParseEvaluated = 0;
         if (interpretations.length) {
+            if (parses.length > 1 && interpretations.length == 1) {
+                systemPrint("Only one of the parses was possible")
+            }
             return interpretations;
         } else {
             // only throw the first error found
             throw errors[0];
+        }
+    }
+    
+    export function systemPrint(string) {
+        if (typeof document != "undefined") {
+            //document.getElementById("dialogue").innerHTML += "<p class='system'>" + string + "</p>";
+            alert(string);
         }
     }
 
@@ -91,19 +113,58 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         let command = cmd.command; 
         let interpretation : DNFFormula = [];
+    
+        // Inverse relation map
+        let inverseRelation = {};
+        inverseRelation["ontop"] = "under";
+        inverseRelation["inside"] = "under";
+        inverseRelation["above"] = "under";
+        inverseRelation["under"] = "above";
+        inverseRelation["beside"] = "beside";
+        inverseRelation["rightof"] = "leftof";
+        inverseRelation["leftof"] = "rightof";
         
         if (command == "take") {
             let targetEntity = cmd.entity;
             let possibleTargetTags = getPossibleEntitieTags(targetEntity,state);
-
-            for (let i = 0; i < possibleTargetTags.length; i++) {
-                let possibleTargetTag = possibleTargetTags[i];
-                if (checkRelation("holding",[possibleTargetTag],state)) {
-                    interpretation.push(
-                        [{polarity: true, relation: "holding", args: [possibleTargetTag]}]
-                    );
+            let targetQuantifier = targetEntity.quantifier;
+            
+            if (targetQuantifier == "the") {
+                if (possibleTargetTags.length > 1) {
+                    
+                    // several options for targetEntity, user must specify
+                    let targetTag = promptIdentifyEntityTag(targetEntity.object, possibleTargetTags, state);
+                    
+                    if (typeof targetTag == "undefined") {
+                        throw "No such entity in the world";
+                    } else {
+                        possibleTargetTags = [targetTag];
+                        targetQuantifier = "any"
+                    }
+                } else {
+                    // there is only one matching object, treat entity quantifier as 'any'
+                    targetQuantifier = "any"
                 }
             }
+            if (targetQuantifier == "all") {
+                if (possibleTargetTags.length == 1) {
+                    // there is only one matching object, treat entity quantifier as 'any'
+                    targetQuantifier = "any"
+                } else {
+                    throw "Cannot hold more than one object";
+                }
+            }
+            if (targetQuantifier == "any") {
+                for (let i = 0; i < possibleTargetTags.length; i++) {
+                    let possibleTargetTag = possibleTargetTags[i];
+                    if (checkRelation("holding",[possibleTargetTag],state)) {
+                        interpretation.push(
+                            [{polarity: true, relation: "holding", args: [possibleTargetTag]}]
+                        );
+                    }
+                }
+            }
+
         } else if (command == "move") {
             // target
             let targetEntity = cmd.entity;
@@ -128,8 +189,25 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                         targetQuantifier = "any"
                     }
                 } else {
-                    // there is only one matching object, treat entity quantifier as 'any'
+                    // there is one matching object at the most, treat entity quantifier as 'any'
                     targetQuantifier = "any"
+                }
+            }
+            if (relativeQuantifier == "the") {
+                if (possibleRelativeTags.length > 1) {
+                    
+                    // several options for targetEntity, user must specify
+                    let relativeTag = promptIdentifyEntityTag(relativeEntity, possibleRelativeTags, state);
+                    
+                    if (typeof relativeTag == "undefined") {
+                        throw "No such entity in the world";
+                    } else {
+                        possibleRelativeTags = [relativeTag];
+                        relativeQuantifier = "any"
+                    }
+                } else {
+                    // there is one matching object at the most, treat entity quantifier as 'any'
+                    relativeQuantifier = "any"
                 }
             }
             if (targetQuantifier == "any") {
@@ -143,40 +221,32 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 }
             }
             if (targetQuantifier == "all") {
-                
+            
                 if (cmd.location.relation == "inside") {
                     if (possibleTargetTags.length > possibleRelativeTags.length) {
                         throw "Not enough boxes";
                     }
                 }
                 
-                let numTargetTags = possibleTargetTags.length;
-                let relativeTagCombs = combinations(possibleRelativeTags, numTargetTags); 
-                
-                for (let i = 0; i < relativeTagCombs.length; i++) {
-                    let thisComb = relativeTagCombs[i];
-                    let thisConjunction = [];
-                    let j = 0;
-                    while (j < possibleTargetTags.length) {
-                        let rel = cmd.location.relation;
-                        let args = [possibleTargetTags[j], thisComb[j]];
-                        if (!checkRelation(rel, args, state)) {
-                            break;
-                        }
-                        thisConjunction.push(
-                            {polarity: true, relation: cmd.location.relation, args: args}
-                        );
-                        j++;
-                    }
-                    if (j != possibleTargetTags.length) {
-                        // one of the conjuctives is false, dont add to DNF formula
-                        continue;
-                    }
-                    
-                    interpretation.push(thisConjunction);
-                }
+                // interpretation for ALL target 'relation' ANY 'relative'
+                interpretation = getCombinatedConjunctions(possibleTargetTags,
+                                                           possibleRelativeTags,
+                                                           cmd.location.relation,
+                                                           state
+                                                          );
                 
             }
+            
+            if (relativeQuantifier == "all") {
+                let invInterpretation = getCombinatedConjunctions(possibleRelativeTags,
+                                                                    possibleTargetTags,
+                                                                    inverseRelation[cmd.location.relation],
+                                                                    state
+                                                                    );
+                // get the DNF for 'interpretation' AND 'invInterpretation'
+                interpretation = expandConjunction(interpretation, invInterpretation);
+            }
+            
         } else if (command == "put") {
             // target
             let targetTag = state.holding;
@@ -184,10 +254,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             // relative
             let relativeEntity = cmd.location.entity;
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
-            
-            console.log("in interpretCommand()")
-            console.log("possibleRelativeTags: ")
-            console.log(possibleRelativeTags)
             
             let combs : string[][] = cartesianProd([targetTag],possibleRelativeTags);
             combs = assertPhysicalLaws(combs,cmd.location.relation,state);
@@ -201,12 +267,61 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         }
         
         if (interpretation.length == 0) {
-            throw "There is no such entity in this world."
+            throw "This is not possible in this world."
         }
         return interpretation;
     }
     
+    /**
+     * generate the DNF formula which corresponds to f1 AND f2
+     */
+    function expandConjunction(f1, f2) {
+        let res = [];
+        for (let i = 0; i < f1.length; i++) {
+            for (let j = 0; j < f2.length; j++) {
+                res.push(f1[i].concat(f2[j]));
+            }
+        }
+        return res;
+    }
+    
+    function getCombinatedConjunctions(possibleTargetTags, possibleRelativeTags, rel, state) : Interpreter.DNFFormula {
+        let interpretation = [];
+        
+        let numTargetTags = possibleTargetTags.length;
+        let relativeTagCombs = combinations(possibleRelativeTags, numTargetTags);
+        
+        for (let i = 0; i < relativeTagCombs.length; i++) {
+            let thisComb = relativeTagCombs[i];
+            let thisConjunction = [];
+            let j = 0;
+            while (j < possibleTargetTags.length) {
+                let args = [possibleTargetTags[j], thisComb[j]];
+                if (!checkRelation(rel, args, state)) {
+                    break;
+                }
+                thisConjunction.push(
+                    {polarity: true, relation: rel, args: args}
+                );
+                j++;
+            }
+            if (j != possibleTargetTags.length) {
+                // one of the conjuctives is false, dont add to DNF formula
+                continue;
+            }
+            
+            interpretation.push(thisConjunction);
+        }
+        
+        return interpretation;
+    }
+    
     function promptIdentifyEntityTag(targetEntity, possibleTargetTags : string[], state : WorldState) : string {
+        
+        if (targetEntity.object) targetEntity = targetEntity.object;
+        
+        // figure out how to denot 'targetEntity' in natural language
+        let targetEntityText : string = stringifyEntity(targetEntity);
         
         let IdFeatures = ["size","color","form"];
         
@@ -231,8 +346,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let numUniqueIDs = featureValVsNumberMap.values().splice(0)
                                .filter(function(val,ind,arr){return val == 1;})
                                .length;
-            
-            if (numUniqueIDs > 0) {
+            if (targetEntity[thisFeature] == null) {
                 featureQueue.enqueue({feature:thisFeature,score:numUniqueIDs});
             }
         }
@@ -240,8 +354,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         while (featureQueue.size() > 0) {
             let thisFeature = featureQueue.dequeue();
             thisFeature = thisFeature.feature;
-            targetEntity[thisFeature] = window.prompt("Please specificy the " + thisFeature + " of the object", "red")
-            
+            targetEntity[thisFeature] = window.prompt(whichParseInfoText + "Please specificy the " + thisFeature + " of the " + targetEntityText, "");
+            targetEntityText = stringifyEntity(targetEntity); // update the entity text
             let newPossibleTargetTags = filterFeatures(targetEntity, state);
             possibleTargetTags = arrayIntersection(possibleTargetTags, newPossibleTargetTags);
             
@@ -250,7 +364,56 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             }
         }
         
+        if (possibleTargetTags.length > 1) {
+            // try asking for stack index
+            let objStackIndex = window.prompt(whichParseInfoText + "Please specificy in which stack the " + targetEntityText + " is", "0-" + (state.stacks.length-1));
+            
+            if (objStackIndex != null) {
+                let newPossibleTargetTags = [];
+                for (let i = 0; i < possibleTargetTags.length; i++) {
+                    if (stackIndex(possibleTargetTags[i],state) == parseInt(objStackIndex)) {
+                        newPossibleTargetTags.push(possibleTargetTags[i]);
+                    }
+                }
+                possibleTargetTags = newPossibleTargetTags;
+            }
+        }
+        
+        if (possibleTargetTags.length > 1) {
+            // try asking for position in stack
+            let objStackIndexOf = window.prompt(whichParseInfoText + "Please specificy the position of the " + targetEntityText + " in it's stack, 0 being the lowest", "");
+            
+            if (objStackIndexOf != null) {
+                let newPossibleTargetTags = [];
+                for (let i = 0; i < possibleTargetTags.length; i++) {
+                    if (stackIndexOf(possibleTargetTags[i],state) == parseInt(objStackIndexOf)) {
+                        newPossibleTargetTags.push(possibleTargetTags[i]);
+                    }
+                }
+                possibleTargetTags = newPossibleTargetTags;
+            }
+        }
+        
+        if (possibleTargetTags.length > 1) {
+            throw "could not uniquely identify the object you specified";
+        }
         return possibleTargetTags[0];
+    }
+    
+    export function stringifyEntity(targetEntity) : string {
+        if (targetEntity.object) targetEntity = targetEntity.object;
+        let targetEntityText : string;
+        let targetEntityTextParts : string[];
+        targetEntityTextParts = [];
+        for (let prop in targetEntity) {
+            if (targetEntity[prop] != null) {
+                targetEntityTextParts.push(targetEntity[prop]);
+            }
+        }
+        targetEntityText = targetEntityTextParts.join(" ");
+        targetEntityText = targetEntityText.replace("anyform","object");
+        
+        return targetEntityText;
     }
     
     export function arrayIntersection(xs, ys) {
@@ -330,26 +493,38 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         
         // return value
         var result : any[] = [];
-        let targetObject = entity.object;
+        let targetObject = entity;
+        if (targetObject.object) targetObject = targetObject.object;
 
         if (targetObject.location == null) {
             let matchingStateObjectTags = filterFeatures(targetObject, state);
+            
+            if (entity.quantifier == "the" && matchingStateObjectTags.length > 1) {
+                let possibleRelativeTag = promptIdentifyEntityTag(targetObject, matchingStateObjectTags, state);
+                matchingStateObjectTags = [possibleRelativeTag];
+            }
+            
             result = matchingStateObjectTags;
         } else {
             let location = targetObject.location;
             let relation = location.relation;
             let relativeEntity = location.entity;
+            let relativeObject = location.entity.object;
+            let relativeQuantifier = location.entity.quantifier;
             
-            targetObject = targetObject.object;
+            if (targetObject.object) targetObject = targetObject.object;
             
             let possibleTargetTags = filterFeatures(targetObject,state);
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
             
             for (let i = 0; i < possibleTargetTags.length; i++) {
                 let thisPossibleTargetTag = possibleTargetTags[i];
+                let push = (relativeQuantifier == "all"); // standard action for 'thisPossibleTargetTag'
                 for (let j = 0; j < possibleRelativeTags.length; j++) {
                     let thisRelativeTag = possibleRelativeTags[j];
                     let thisPossibleTarget = state.objects[thisPossibleTargetTag];
+                    
+                    let thisRelativeIsRelated = false;
                     
                     let thisRelative;
                     if (thisRelativeTag == "floor") {
@@ -365,7 +540,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                         {
                                 if (!(thisPossibleTarget.size == "large" && thisRelative.size == "small")) 
                                 {
-                                    result.push(thisPossibleTargetTag);
+                                    thisRelativeIsRelated = true;
                                 }
                         }
                     } else if (relation == "ontop") {
@@ -373,37 +548,45 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                                 && stackIndexOf(thisPossibleTargetTag,state) == stackIndexOf(thisRelativeTag,state) + 1) 
                             || (thisRelativeTag == "floor"&& stackIndexOf(thisPossibleTargetTag,state) == 0)) 
                         {
-                                result.push(thisPossibleTargetTag);
+                                thisRelativeIsRelated = true;
                         }
                     } else if (relation == "above") {
                         if ((isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
                                 && stackIndexOf(thisPossibleTargetTag,state) > stackIndexOf(thisRelativeTag,state)) 
                             || (thisRelativeTag == "floor")) 
                         {
-                                result.push(thisPossibleTargetTag);
+                                thisRelativeIsRelated = true;
                         }
                     } else if (relation == "under") {
                         if (isInSameStack(thisPossibleTargetTag,thisRelativeTag,state)
                             && stackIndexOf(thisPossibleTargetTag,state) < stackIndexOf(thisRelativeTag,state)) 
                         {
-                                result.push(thisPossibleTargetTag);
+                                thisRelativeIsRelated = true;
                         }
                     } else if (relation == "beside") {
                         if (Math.abs(stackIndex(thisPossibleTargetTag,state) - stackIndex(thisRelativeTag,state)) == 1) 
                         {
-                            result.push(thisPossibleTargetTag);
+                            thisRelativeIsRelated = true;
                         }
                     } else if (relation == "leftof") {
                         if (stackIndex(thisPossibleTargetTag,state) < stackIndex(thisRelativeTag,state) ) 
                         {
-                            result.push(thisPossibleTargetTag);
+                            thisRelativeIsRelated = true;
                         }
                     } else if (relation == "rightof") {
                         if (stackIndex(thisPossibleTargetTag,state) > stackIndex(thisRelativeTag,state) ) 
                         {
-                            result.push(thisPossibleTargetTag);
+                            thisRelativeIsRelated = true;
                         }
                     }
+                    if (relativeQuantifier == "all") {
+                        push = push && thisRelativeIsRelated;
+                    } else {
+                        push = push || thisRelativeIsRelated;
+                    }
+                }
+                if (push) {
+                    result.push(thisPossibleTargetTag);
                 }
             }
         }
@@ -471,6 +654,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     // returns list of objects in 'stateObjects' matching 'targetObject' w.r.t the following features
     let matchFeatures = ["size","color","form"];
     function filterFeatures(targetObject : any, state : WorldState) : string[] {
+        
+        if (targetObject.object) targetObject = targetObject.object;
         
         if (('form' in targetObject) && targetObject.form == "floor") {
             return ["floor"];
