@@ -379,20 +379,29 @@ module Planner {
                         result += 4 * numElsInShortestStack;
                     }
                 } else {
-                    let holdingRelativeLiteral : Interpreter.Literal = {
-                        polarity: true,
-                        relation: "holding",
-                        args: [relativeTag]
-                    };
-                    // clearing the way for relative corresponds to holding it, but skipping picking it up
-                    let recCall = estimatedPathLength(state, holdingRelativeLiteral);
-                    result += recCall[0] - 1;
-                    //state = recCall[1]; // neglect this state update - it thinks arm is holding 'relativeTag'
-                    state.arm = relativeStackIndex; // but the arm is at 'relative'
+                    if (state.holding != relativeTag) {
+                        let holdingRelativeLiteral : Interpreter.Literal = {
+                            polarity: true,
+                            relation: "holding",
+                            args: [relativeTag]
+                        };
+                        // clearing the way for relative corresponds to holding it, but skipping picking it up
+                        let recCall = estimatedPathLength(state, holdingRelativeLiteral);
+                        result += recCall[0] - 1;
+                        //state = recCall[1]; // neglect this state update - it thinks arm is holding 'relativeTag'
+                        state.arm = relativeStackIndex; // but the arm is at 'relative'
+                    } else {
+                        // drop 'relativeTag'
+                        result++;
+                        
+                        // update 'state' - drop what is held
+                        state.stacks[state.arm].push(state.holding);
+                        state.holding = null;
+                    }
                 }
                 
                 //
-                // target should now be accessible
+                // relative should now be accessible
                 //
                 
                 // if not already holding target
