@@ -210,7 +210,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     relativeQuantifier = "any"
                 }
             }
-            if (targetQuantifier == "any") {
+            if (targetQuantifier == "any" && relativeQuantifier != "all") {
                 let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
                 combs = assertPhysicalLaws(combs,cmd.location.relation,state);
                 for (let i = 0; i < combs.length; i++) {
@@ -220,7 +220,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     );
                 }
             }
-            if (targetQuantifier == "all") {
+            if (targetQuantifier == "all" && relativeQuantifier == "any") {
             
                 if (cmd.location.relation == "inside") {
                     if (possibleTargetTags.length > possibleRelativeTags.length) {
@@ -228,24 +228,51 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     }
                 }
                 
-                // interpretation for ALL target 'relation' ANY 'relative'
-                interpretation = getCombinatedConjunctions(possibleTargetTags,
-                                                           possibleRelativeTags,
-                                                           cmd.location.relation,
-                                                           state
-                                                          );
+                let combConjs = getCombinatedConjunctions(possibleTargetTags,
+                                                          possibleRelativeTags,
+                                                          cmd.location.relation,
+                                                          state
+                                                         );
+                for (let i = 0; i < combConjs.length; i++) {
+                    let allPossible = true;
+                    for (let j = 0; j < combConjs[i].length; j++) {
+                        allPossible = allPossible
+                                      && checkRelation(combConjs[i][j].relation, combConjs[i][j].args, state);
+                    }
+                    if (allPossible) interpretation.push(combConjs[i])
+                }
+            } else if (targetQuantifier == "any" && relativeQuantifier == "all") {
+            
+                let relativeCombs = combinations(possibleRelativeTags, possibleTargetTags.length);
                 
+                for (let i = 0; i < relativeCombs.length; i++) {
+                    let thisConjunction = [];
+                    let thisComb = relativeCombs[i];
+                    for (let j = 0; j < possibleTargetTags.length; j++) {
+                        console.log(i + "-" + j)
+                        thisConjunction.push(
+                            {polarity: true,
+                             relation: cmd.location.relation,
+                             args: [possibleTargetTags[j],thisComb[j]]}
+                        );
+                    }
+                    interpretation.push(thisConjunction);
+                }
+                
+            } else if (targetQuantifier == "all" && relativeQuantifier == "all") {
+                
+                let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
+                
+                let conjunctions = [];
+                for (let i = 0; i < combs.length; i++) {
+                    let comb = combs[i];
+                    conjunctions.push(
+                        {polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}
+                    );
+                }
+                interpretation.push(conjunctions)
             }
             
-            if (relativeQuantifier == "all") {
-                let invInterpretation = getCombinatedConjunctions(possibleRelativeTags,
-                                                                    possibleTargetTags,
-                                                                    inverseRelation[cmd.location.relation],
-                                                                    state
-                                                                    );
-                // get the DNF for 'interpretation' AND 'invInterpretation'
-                interpretation = expandConjunction(interpretation, invInterpretation);
-            }
             
         } else if (command == "put") {
             // target
