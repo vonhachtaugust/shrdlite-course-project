@@ -437,7 +437,11 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             }
         }
         targetEntityText = targetEntityTextParts.join(" ");
-        targetEntityText = targetEntityText.replace("anyform","object");
+        if (targetEntityText.indexOf("anyform") > -1) {
+            targetEntityText = targetEntityText.replace("anyform","object");
+        } else if (targetEntity["form"] == null) {
+            targetEntityText += " object";
+        }
         
         return targetEntityText;
     }
@@ -545,6 +549,14 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             
             let possibleTargetTags = filterFeatures(targetObject,state);
             let possibleRelativeTags = getPossibleEntitieTags(relativeEntity,state);
+            
+            if (entity.quantifier == "the" && possibleRelativeTags.length > 1) {
+                let possibleRelativeTag = promptIdentifyEntityTag(targetObject, possibleRelativeTags, state);
+                if (possibleRelativeTag) {
+                    // if able to identify
+                    possibleRelativeTags = [possibleRelativeTag];
+                }
+            }
             
             for (let i = 0; i < possibleTargetTags.length; i++) {
                 let thisPossibleTargetTag = possibleTargetTags[i];
