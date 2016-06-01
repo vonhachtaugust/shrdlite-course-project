@@ -426,7 +426,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return possibleTargetTags[0];
     }
     
-    export function stringifyEntity(targetEntity) : string {
+    function stringifyEntity(targetEntity) : string {
         if (targetEntity.object) targetEntity = targetEntity.object;
         let targetEntityText : string;
         let targetEntityTextParts : string[];
@@ -519,7 +519,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     }
     
     // returns list of tags for objects satisfying 'entity' in world 'state'
-    function getPossibleEntitieTags(entity : any, state : WorldState) : string[] {
+    export function getPossibleEntitieTags(entity : any, state : WorldState) : string[] {
         
         // return value
         var result : any[] = [];

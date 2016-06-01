@@ -96,7 +96,11 @@ module Planner {
         let stateSequence = path.path;
         stateSequence.unshift(state);
         
-        return pathToPlan(stateSequence);
+        let plan = pathToPlan(stateSequence);
+        
+        plan = insertActionDescriptionTexts(plan, stateSequence);
+        
+        return plan;
     }
     
     function pathToPlan(path : WorldState[]) : string[] {
@@ -128,6 +132,164 @@ module Planner {
             }
         }
         return result;
+    }
+    
+    /**
+     * insert descritive updates at appropriate places in the plan
+     */
+    function insertActionDescriptionTexts(plan : string[], stateSequence : WorldState[]) : string[] {
+        
+        // next position in plan to insert descriptive text
+        let printPos = 0;
+        let entity = null;
+        
+        let i = 0;
+        let stateIndex = 0;
+        let numInsertedTexts = 0;
+        while (stateIndex < stateSequence.length) {
+            
+            if (i == plan.length) break;
+            
+            if (plan[i] == "p") {
+                // identified current entity, print at last known position
+                
+                let text = "";
+                
+                if (plan.indexOf("d", i+1) == -1) {
+                    // target will not be dropped
+                    text += "I take ";
+                } else {
+                    text += "I move ";
+                }
+                
+                // state before this action
+                let state = stateSequence[stateIndex];
+                
+                // what was picked up
+                let entityStack = state.stacks[state.arm];
+                let entityTag = entityStack[entityStack.length - 1];
+                let entity = state.objects[entityTag];
+                
+                text += stringifyEntity(entity, state)
+                
+                plan.splice(printPos, 0, text);
+                numInsertedTexts++;
+                i++;
+            }
+            
+            // find next position at which to print
+            if (plan[i] == "d") {
+                printPos = i + 1;
+            }
+            
+            i++;
+            stateIndex++;
+        }
+        
+        // add 'first', 'finally'
+        if (numInsertedTexts > 1) {
+            for (let i = plan.length - 1; i >= 0; i--) {
+                if (!(plan[i] == "r" || plan[i] == "l" || plan[i] == "d" || plan[i] == "p")) {
+                    // plan[i] is an action description
+                    plan[i] = "Finally, " + plan[i];
+                    break;
+                }
+            }
+            for (let i = 0; i < plan.length; i++) {
+                if (!(plan[i] == "r" || plan[i] == "l" || plan[i] == "d" || plan[i] == "p")) {
+                    // plan[i] is an action description
+                    if (plan[i].indexOf("Finally, ") > -1) {
+                        break;
+                    } else if (i == 0) {
+                        plan[i] = "First, " + plan[i];
+                    } else {
+                        plan[i] = "Then, " + plan[i];
+                    }
+                }
+            }
+        }
+        
+        return plan;
+    }
+    
+    /**
+     * generate a descriptive text which uniquely identifies 'entity'
+     */
+    function stringifyEntity(entity, state) : string {
+        
+        let res = "the "
+        
+        let uniqueCombs = findUniqueIdCombs(entity, state);
+        let uniqueComb = uniqueCombs[uniqueCombs.length - 1];
+        
+        let propsPrintOrder = props.reverse();
+        
+        let encounteredForm = false;
+        for (let i = 0; i < propsPrintOrder.length; i++) {
+            let prop = propsPrintOrder[i];
+            
+            if (uniqueComb.indexOf(prop) == -1) continue;
+            
+            res += entity[prop] + " ";
+            
+            if (!encounteredForm && prop == "form") {
+                encounteredForm = true;
+            }
+        }
+        
+        props.reverse(); // reverse props back
+        
+        if (!encounteredForm) {
+            res += "object";
+        }
+        
+        return res;
+    }
+    
+    let props = ["form", "color", "size"]; // defines the priority in which to remove properties
+    /**
+     * get the list of all permutations of object properties that uniquely defines the same object
+     * as @param entity in @param state. Last combination in the list will be the shortest.
+     */
+    function findUniqueIdCombs(entity, state : WorldState) {
+        //
+        // assertion: 'entity' is unique in 'state'
+        //
+        
+        // generate the list of possible entities 
+        let possibleTags = Interpreter.getPossibleEntitieTags(entity, state);
+        if (possibleTags.length > 1) {
+            return [];
+        }
+        
+        let uniqueCombs = [];
+        
+        // compute the current property combination
+        let comb = [];
+        for (let prop in entity) {
+            if (entity[prop] != null) {
+                comb.push(prop);
+            }
+        }
+        uniqueCombs.push(comb);
+        
+        // remove properties one by one
+        for (let i = 0; i < props.length; i++) {
+            if (comb.indexOf(props[i]) == -1) continue;
+            
+            let prop = props[i];
+        
+            // clone entity object
+            let testEntity = cloneObject(entity);
+            
+            // try removing this property from testEntity
+            testEntity[prop] = null;
+            
+            let recCombs = findUniqueIdCombs(testEntity, state);
+            uniqueCombs = uniqueCombs.concat(recCombs);
+        }
+        
+        return uniqueCombs;
     }
 
     /**
