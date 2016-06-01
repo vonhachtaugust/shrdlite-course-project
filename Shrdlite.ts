@@ -74,7 +74,9 @@ module Shrdlite {
 
             if (interpretations.length > 1) {
                 let promptText = "";
-                promptText += "Several interpretations were found.\nPlease choose one based on it´s estimated number of required actions\n\n";
+                promptText += "Several interpretations were found.\n";
+                promptText += "Please choose one based on it´s estimated number of required actions,\n";
+                promptText += "or type 'all' to attempt to calculate a plan for each of them.\n\n";
                 let bestInterpretation;
                 let bestInterpretationHeuristic = Infinity;
                 for (let i = 0; i < interpretations.length; i++) {
@@ -88,26 +90,30 @@ module Shrdlite {
                     promptText += "\n";
                     if (estPathLength < bestInterpretationHeuristic) {
                         bestInterpretation = thisInterpretationResult;
+                        bestInterpretationHeuristic = estPathLength;
                     }
                 }
                 promptText += "\n";
-                let chosenInterpretation : Interpreter.InterpretationResult;
-                let chosenInterpretationIndex : any = prompt(promptText, 1 + "-" + interpretations.length);
-                if (chosenInterpretationIndex != null) {
-                    chosenInterpretationIndex = parseInt(chosenInterpretationIndex) - 1;
+                let chosenInterpretationInput : any = prompt(promptText, 1 + "-" + interpretations.length);
+                let chosenInterpretationIndex = chosenInterpretationInput;
+                if (chosenInterpretationIndex.toLowerCase() != "all") {
+                    let chosenInterpretation : Interpreter.InterpretationResult;
+                    if (chosenInterpretationIndex != null) {
+                        chosenInterpretationIndex = parseInt(chosenInterpretationIndex) - 1;
+                    }
+                    if (
+                        chosenInterpretationIndex == null
+                        || chosenInterpretationIndex < 0
+                        || chosenInterpretationIndex > (interpretations.length - 1)
+                        || (chosenInterpretationIndex + 1) != chosenInterpretationInput
+                    ) {
+                        alert("You didn´t specify a valid interpretation, so the one with minimum number of actions was automatically chosen")
+                        chosenInterpretation = bestInterpretation;
+                    } else {
+                        chosenInterpretation = interpretations[chosenInterpretationIndex];
+                    }
+                    interpretations = [chosenInterpretation]
                 }
-                if (
-                    chosenInterpretationIndex == null
-                    || chosenInterpretationIndex < 0
-                    || chosenInterpretationIndex > (interpretations.length - 1)
-                    || chosenInterpretationIndex != chosenInterpretationIndex
-                   ) {
-                    alert("You didn´t specify a valid interpretation, so the one with minimum number of actions was automatically chosen")
-                    chosenInterpretation = bestInterpretation;
-                } else {
-                    chosenInterpretation = interpretations[chosenInterpretationIndex];
-                }
-                interpretations = [chosenInterpretation]
             }
         }
         catch(err) {
@@ -124,12 +130,42 @@ module Shrdlite {
             });
 
             if (plans.length > 1) {
-                // several plans were found -- how should this be handled?
-                // this means that we have several interpretations,
-                // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
-                // or should we select the interpretation with the shortest plan?
-                // ... plans.sort((a, b) => {return a.length - b.length});
+                let promptText = "";
+                promptText += "Several plans were found.\n";
+                promptText += "Please choose one based on it´s required number of moves.\n\n";
+                let bestPlan;
+                let bestPlanLength = Infinity;
+                for (let i = 0; i < plans.length; i++) {
+                    let thisPlan = plans[i];
+                    promptText += "  (" + (i+1) + "): " + (thisPlan.plan.length - 1);
+                    if (thisPlan.plan.length == 0) {
+                        promptText += "  <- Already fulfilled"
+                    }
+                    promptText += "\n";
+                    if (thisPlan.plan.length < bestPlanLength) {
+                        bestPlan = thisPlan;
+                        bestPlanLength = thisPlan.plan.length;
+                    }
+                }
+                promptText += "\n";
+                let chosenPlanInput : any = prompt(promptText, 1 + "-" + plans.length);
+                let chosenPlanIndex = chosenPlanInput;
+                let chosenPlan : Planner.PlannerResult;
+                if (chosenPlanIndex != null) {
+                    chosenPlanIndex = parseInt(chosenPlanIndex) - 1;
+                }
+                if (
+                    chosenPlanIndex == null
+                    || chosenPlanIndex < 0
+                    || chosenPlanIndex > (plans.length - 1)
+                    || (chosenPlanIndex + 1) != chosenPlanInput
+                ) {
+                    alert("You didn´t specify a valid plan, so the one with minimum number of actions was automatically chosen")
+                    chosenPlan = bestPlan;
+                } else {
+                    chosenPlan = plans[chosenPlanIndex];
+                }
+                plans = [chosenPlan]
             }
         }
         catch(err) {
