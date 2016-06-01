@@ -354,7 +354,7 @@ module Planner {
     /**
      * function for calculating the heuristic for state 's'
      */
-    function heuristicFunction(state: WorldState, interpretation : Interpreter.DNFFormula) : number {
+    export function heuristicFunction(state: WorldState, interpretation : Interpreter.DNFFormula) : number {
         
         let isGoal = goal(interpretation, state);
         if (isGoal) {

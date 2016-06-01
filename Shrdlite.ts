@@ -73,11 +73,41 @@ module Shrdlite {
             });
 
             if (interpretations.length > 1) {
-                alert("several interpretations")
-                // several interpretations were found -- how should this be handled?
-                // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
-                // or should we let the planner decide?
+                let promptText = "";
+                promptText += "Several interpretations were found.\nPlease choose one based on it´s estimated number of required actions\n\n";
+                let bestInterpretation;
+                let bestInterpretationHeuristic = Infinity;
+                for (let i = 0; i < interpretations.length; i++) {
+                    let thisInterpretationResult = interpretations[i];
+                    let thisInterpretation = thisInterpretationResult.interpretation;
+                    let estPathLength = Planner.heuristicFunction(world.currentState, thisInterpretation);
+                    promptText += "  (" + (i+1) + "): " + estPathLength;
+                    if (estPathLength == 0) {
+                        promptText += "  <- Already fulfilled"
+                    }
+                    promptText += "\n";
+                    if (estPathLength < bestInterpretationHeuristic) {
+                        bestInterpretation = thisInterpretationResult;
+                    }
+                }
+                promptText += "\n";
+                let chosenInterpretation : Interpreter.InterpretationResult;
+                let chosenInterpretationIndex : any = prompt(promptText, 1 + "-" + interpretations.length);
+                if (chosenInterpretationIndex != null) {
+                    chosenInterpretationIndex = parseInt(chosenInterpretationIndex) - 1;
+                }
+                if (
+                    chosenInterpretationIndex == null
+                    || chosenInterpretationIndex < 0
+                    || chosenInterpretationIndex > (interpretations.length - 1)
+                    || chosenInterpretationIndex != chosenInterpretationIndex
+                   ) {
+                    alert("You didn´t specify a valid interpretation, so the one with minimum number of actions was automatically chosen")
+                    chosenInterpretation = bestInterpretation;
+                } else {
+                    chosenInterpretation = interpretations[chosenInterpretationIndex];
+                }
+                interpretations = [chosenInterpretation]
             }
         }
         catch(err) {
