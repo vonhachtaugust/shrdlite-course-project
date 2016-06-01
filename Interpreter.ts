@@ -18,20 +18,19 @@ module Interpreter {
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
 
+    var currentParseEvaluated = 0;
+    var whichParseInfoText = "";
+    var hasPrintedAmguityInfo = false;
 /**
 Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. 
 * @param parses List of parses produced by the Parser.
 * @param currentState The current state of the world.
 * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
 */    
-    var currentParseEvaluated = 0;
-    var whichParseInfoText = "";
     export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
         var errors : Error[] = [];
         var interpretations : InterpretationResult[] = [];
-        if (parses.length > 1) {
-            systemPrint("Your command can be interpreted in several way (multiple parses). All parses will be evaluated.")
-        }
+        let successfulInterpretation;
         parses.forEach((parseresult) => {
             currentParseEvaluated++;
             if (parses.length > 1) {
@@ -43,15 +42,17 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
+                successfulInterpretation = currentParseEvaluated;
             } catch(err) {
                 errors.push(err);
             }
         });
-        currentParseEvaluated = 0;
         if (interpretations.length) {
-            if (parses.length > 1 && interpretations.length == 1) {
-                systemPrint("Only one of the parses was possible")
+            if (parses.length > 1 && interpretations.length == 1 && hasPrintedAmguityInfo) {
+                systemPrint("Only parse " + successfulInterpretation + " was possible")
             }
+            hasPrintedAmguityInfo = false;
+            currentParseEvaluated = 0;
             return interpretations;
         } else {
             // only throw the first error found
@@ -375,6 +376,11 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             if (targetEntity[thisFeature] == null || targetEntity[thisFeature].substring(0,3) == "any") {
                 featureQueue.enqueue({feature:thisFeature,score:numUniqueIDs});
             }
+        }
+        
+        if (whichParseInfoText != "" && !hasPrintedAmguityInfo) {
+            systemPrint("Your command can be interpreted in several ways (multiple parses). All parses will be evaluated.")
+            hasPrintedAmguityInfo = true;
         }
         
         while (featureQueue.size() > 0) {
