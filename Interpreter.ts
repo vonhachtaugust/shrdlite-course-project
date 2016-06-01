@@ -249,7 +249,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     let thisConjunction = [];
                     let thisComb = relativeCombs[i];
                     for (let j = 0; j < possibleTargetTags.length; j++) {
-                        console.log(i + "-" + j)
                         thisConjunction.push(
                             {polarity: true,
                              relation: cmd.location.relation,
@@ -373,7 +372,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let numUniqueIDs = featureValVsNumberMap.values().splice(0)
                                .filter(function(val,ind,arr){return val == 1;})
                                .length;
-            if (targetEntity[thisFeature] == null) {
+            if (targetEntity[thisFeature] == null || targetEntity[thisFeature].substring(0,3) == "any") {
                 featureQueue.enqueue({feature:thisFeature,score:numUniqueIDs});
             }
         }
@@ -528,7 +527,10 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             
             if (entity.quantifier == "the" && matchingStateObjectTags.length > 1) {
                 let possibleRelativeTag = promptIdentifyEntityTag(targetObject, matchingStateObjectTags, state);
-                matchingStateObjectTags = [possibleRelativeTag];
+                if (possibleRelativeTag) {
+                    // if able to identify
+                    matchingStateObjectTags = [possibleRelativeTag];
+                }
             }
             
             result = matchingStateObjectTags;
