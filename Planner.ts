@@ -377,7 +377,7 @@ module Planner {
             
             for (let j = 0; j < thisDisjunction.length; j++) {
                 let thisConjunction : Interpreter.Literal = thisDisjunction[j];
-                thisHeuristic += estimatedPathLength(state,thisConjunction)[0];
+                thisHeuristic += estimatedPathLength(state,thisConjunction);
             }
             
             if (thisHeuristic < minHeuristic) {
@@ -395,9 +395,6 @@ module Planner {
         let rel = condition.relation;
         let args = condition.args;
         let t = 0;
-        
-        //let initState = cloneObject(state); // currently not used
-        state = cloneObject(state); // will remember the arm, holding, and the stacks roughly
         
         if (rel == undefined || args == undefined) {
             console.error("Arguments = " + args + " | " + "relation = " + rel);
@@ -419,10 +416,6 @@ module Planner {
                     return 0;
                 } else if (state.holding != null) {
                     result++;
-                    
-                    // drop the object which is curently heldObjectTag
-                    state.stacks[state.arm].push(state.holding);
-                    state.holding = null;
                 }
                 
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
@@ -435,7 +428,6 @@ module Planner {
                 
                 // move arm to target stack
                 result += Math.abs(state.arm - targetStackIndex);
-                state.arm = targetStackIndex;
                 
                 // number of obstacles in the way of picking up 'target'
                 let numObstacles = state.stacks[targetStackIndex].length - (targetStackIndexOf + 1);
@@ -445,7 +437,6 @@ module Planner {
                 
                 // pick up 'target'
                 result++;
-                state.holding = targetTag;
             } else {
                 console.error("estimatedPathLengt h() got condition 'holding' with args: " + args)
             }
@@ -479,15 +470,16 @@ module Planner {
                     //
                     targetStackIndex = state.arm;
                 } else {
+                    // estimated cost for moving arm to stack index of targetTag
+                    result += Math.abs(state.arm - targetStackIndex);
+                    
                     // estimated cost for picking up targetTag i.e. holding it -> see rel == "holding"
                     let holdingTargetLiteral: Interpreter.Literal = {
                         polarity: true,
                         relation: "holding",
                         args: [targetTag]
                     };
-                    let recCall = estimatedPathLength(state, holdingTargetLiteral);
-                    result += recCall[0];
-                    state = recCall[1];
+                    result += estimatedPathLength(state, holdingTargetLiteral);
                 }
                 
                 //
@@ -495,13 +487,10 @@ module Planner {
                 //
                 
                 // estimated cost for moving targetTag to stack index of relativeTag
-                result += Math.abs(state.arm - relativeStackIndex);
-                //state.arm = relativeStackIndex; // commented - will not be used before return
+                result += Math.abs(targetStackIndex - relativeStackIndex);
                 
                 // drop the object
                 result++;
-                //state.stacks[state.arm].push(state.holding); // currently not used before return
-                //state.holding = null; // currently not be used before return
             } else {
                 console.error("estimatedPathLength() got condition 'above' with args: " + args);
             }
@@ -535,7 +524,6 @@ module Planner {
 
                         // move the arm to the shortest stack
                         result += Math.abs(relativeStackIndex - state.arm);
-                        state.arm = relativeStackIndex;
                         
                         // 4 moves for each stacked object
                         result += 4 * numElsInShortestStack;
@@ -548,17 +536,10 @@ module Planner {
                             args: [relativeTag]
                         };
                         // clearing the way for relative corresponds to holding it, but skipping picking it up
-                        let recCall = estimatedPathLength(state, holdingRelativeLiteral);
-                        result += recCall[0] - 1;
-                        //state = recCall[1]; // neglect this state update - it thinks arm is holding 'relativeTag'
-                        state.arm = relativeStackIndex; // but the arm is at 'relative'
+                        result += estimatedPathLength(state, holdingRelativeLiteral) - 1;
                     } else {
                         // drop 'relativeTag'
                         result++;
-                        
-                        // update 'state' - drop what is held
-                        state.stacks[state.arm].push(state.holding);
-                        state.holding = null;
                     }
                 }
                 
@@ -575,19 +556,14 @@ module Planner {
                         relation: "holding",
                         args: [targetTag]
                     };
-                    let recCall = estimatedPathLength(state, holdingTargetLiteral);
-                    result += recCall[0];
-                    state = recCall[1];
+                    result += estimatedPathLength(state, holdingTargetLiteral);
                 }
                 
                 // move arm to relative stack
-                result += Math.abs(relativeStackIndex - state.arm);
-                //state.arm = relativeStackIndex; // currently not used before return
+                result += Math.abs(relativeStackIndex - targetStackIndex);
                 
                 // drop the object
                 result++;
-                //state.stacks[state.arm].push(state.holding); // currently not used before return
-                //state.holding = null; // currently not be used before return
                 
             } else {
                 console.error("estimatedPathLength() got condition 'ontop' with args: " + args);
@@ -631,24 +607,15 @@ module Planner {
                         relation: "holding",
                         args: [relativeTag]
                     };
-                    let recCall = estimatedPathLength(state, holdingRelativeLiteral);
-                    result += recCall[0];
-                    state = recCall[1];
+                    result += estimatedPathLength(state, holdingRelativeLiteral);
                     
                     // now holding relative
                     
                     // move one step
                     result++;
-                    if (relativeStackIndex == 0) {
-                        state.arm++;
-                    } else {
-                        state.arm--;
-                    }
                     
                     // drop the relative
                     result++;
-                    state.stacks[state.arm].push(state.holding);
-                    state.holding = null;
                 }
                 
                 if (state.holding == targetTag) {
@@ -660,27 +627,17 @@ module Planner {
                         relation: "holding",
                         args: [targetTag]
                     };
-                    let recCall = estimatedPathLength(state, holdingTargetLiteral);
-                    result += recCall[0];
-                    state = recCall[1];
+                    result += estimatedPathLength(state, holdingTargetLiteral);
                 }
 
                 // move arm to target stack
-                result += Math.abs(relativeStackIndex - state.arm);
-                state.arm = relativeStackIndex;
+                result += Math.abs(relativeStackIndex - targetStackIndex);
                 
                 //to go to neighbour stack
                 result++;
-                /*if (rel == "leftof") { // currently not used
-                    state.arm--;
-                } else {
-                    state.arm++;
-                }*/
 
                 // drop the object
                 result++;
-                //state.stacks[state.arm].push(state.holding); // currently not used before return
-                //state.holding = null; // currently not be used before return
                 
             } else {
                 console.error("estimatedPathLength() got condition 'leftof' with args: " + args);
@@ -702,9 +659,7 @@ module Planner {
                         relation: "holding",
                         args: [targetTag]
                     };
-                    let recCall = estimatedPathLength(state, holdingTargetLiteral);
-                    result += recCall[0];
-                    state = recCall[1];
+                    result += estimatedPathLength(state, holdingTargetLiteral);
                 }
                 
                 // now holding 'target'
@@ -719,18 +674,9 @@ module Planner {
                     // move target one step away from relative
                     result++;
                 }
-                
-                // prefer the same side as the target object
-                if (relativeStackIndex < targetStackIndex) {
-                    state.arm = relativeStackIndex + 1;
-                } else {
-                    state.arm = relativeStackIndex - 1; // might be incorrect if target and relative were in the same stack
-                }
 
                 // drop the object
                 result++;
-                //state.stacks[state.arm].push(state.holding); // currently not used before return
-                //state.holding = null; // currently not be used before return
                 
             } else {
                 console.error("estimatedPathLength() got condition 'beside' with args: " + args);
@@ -740,7 +686,7 @@ module Planner {
         {
             console.error("estimatedPathLength() got state with relation: " + rel);
         }
-        return [result, state];
+        return result;
     }
 
     class StateGraph implements Graph<WorldState> {
