@@ -494,6 +494,16 @@ module Planner {
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
                 // stack position of relative entity, undefined if arm is holding targetTag
                 let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
+
+                if (state.holding == relativeTag) {
+                    relativeStackIndex = state.arm;
+                    if (targetStackIndex == relativeStackIndex) {
+                        // move one step
+                        result++;
+                    }
+                    // drop relative
+                    result++;
+                }
                 
                 // However, if holding then just move and drop object
                 if (state.holding == targetTag) {
@@ -502,9 +512,6 @@ module Planner {
                     //
                     targetStackIndex = state.arm;
                 } else {
-                    // estimated cost for moving arm to stack index of targetTag
-                    result += Math.abs(state.arm - targetStackIndex);
-                    
                     // estimated cost for picking up targetTag i.e. holding it -> see rel == "holding"
                     let holdingTargetLiteral: Interpreter.Literal = {
                         polarity: true,
@@ -518,8 +525,13 @@ module Planner {
                 // Now holding 'targetTag'
                 //
                 
-                // estimated cost for moving targetTag to stack index of relativeTag
-                result += Math.abs(targetStackIndex - relativeStackIndex);
+                if (targetStackIndex == relativeStackIndex) {
+                    // relative was moved est. one stack when 'holding' target
+                    result++;
+                } else {
+                    // estimated cost for moving targetTag to stack index of relativeTag
+                    result += Math.abs(targetStackIndex - relativeStackIndex);
+                }
                 
                 // drop the object
                 result++;
@@ -681,6 +693,18 @@ module Planner {
                 // target entity
                 let targetTag = args[0];
                 let targetStackIndex = Interpreter.stackIndex(targetTag, state);
+                
+                let relativeTag = args[1];
+                let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
+                
+                if (state.holding == relativeTag) {
+                    let besideTargetLiteral : Interpreter.Literal = {
+                        polarity: true,
+                        relation: "beside",
+                        args: [relativeTag,targetTag]
+                    };
+                    return estimatedPathLength(state, besideTargetLiteral);
+                }
 
                 if (state.holding == targetTag) {
                     targetStackIndex = state.arm;
@@ -695,9 +719,6 @@ module Planner {
                 }
                 
                 // now holding 'target'
-                
-                let relativeTag = args[1];
-                let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
 
                 // move arm to relative stack and prefere the neigbour which is closer to target
                 if (relativeStackIndex != state.arm) {

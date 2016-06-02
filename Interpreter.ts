@@ -272,9 +272,11 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 let conjunctions = [];
                 for (let i = 0; i < combs.length; i++) {
                     let comb = combs[i];
-                    conjunctions.push(
-                        {polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}
-                    );
+                    if (checkRelation(cmd.location.relation, [comb[0],comb[1]], state)) {
+                        conjunctions.push(
+                            {polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}
+                        );
+                    }
                 }
                 interpretation.push(conjunctions)
             }
