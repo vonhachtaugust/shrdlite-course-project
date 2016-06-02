@@ -21,6 +21,7 @@ module Interpreter {
     var currentParseEvaluated = 0;
     var whichParseInfoText = "";
     var hasPrintedAmguityInfo = false;
+    var currentPossibleTargetTags = [];
 /**
 Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. 
 * @param parses List of parses produced by the Parser.
@@ -41,6 +42,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
+                result.targetTags = currentPossibleTargetTags;
                 interpretations.push(result);
                 successfulInterpretation = currentParseEvaluated;
             } catch(err) {
@@ -69,6 +71,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
     export interface InterpretationResult extends Parser.ParseResult {
         interpretation : DNFFormula;
+        targetTags : string[];
     }
 
     export type DNFFormula = Conjunction[];
@@ -165,6 +168,9 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     }
                 }
             }
+            
+            // pass 'possibleTargetTags' on to Shrdlite
+            currentPossibleTargetTags = possibleTargetTags;
 
         } else if (command == "move") {
             // target
@@ -273,6 +279,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 interpretation.push(conjunctions)
             }
             
+            // pass 'possibleTargetTags' on to Shrdlite
+            currentPossibleTargetTags = possibleTargetTags;
             
         } else if (command == "put") {
             // target
@@ -291,6 +299,9 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     [{polarity: true, relation: cmd.location.relation, args: [comb[0],comb[1]]}]
                 );
             }
+            
+            // pass 'possibleTargetTags' on to Shrdlite
+            currentPossibleTargetTags = [targetTag];
         }
         
         if (interpretation.length == 0) {

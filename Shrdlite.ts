@@ -73,6 +73,55 @@ module Shrdlite {
             });
 
             if (interpretations.length > 1) {
+                
+                // user chooses based on target entity
+                let promptText = "";
+                promptText += "Several interpretations were found.\n";
+                promptText += "Did you mean ...\n\n";
+                let promptTextContributions = [];
+                let usedTags = new collections.Set<string>();
+                for (let i = 0; i < interpretations.length; i++) {
+                    let thisInterpretation = interpretations[i];
+                    let thisInterpretationTargetTags = thisInterpretation.targetTags;
+                    let tagString;
+                    for (let j = 0; j < thisInterpretationTargetTags.length; j++) {
+                        let thisTag = thisInterpretationTargetTags[j];
+                        if (usedTags.contains(thisTag)) continue;
+                        usedTags.add(thisTag)
+                        let thisEntity = world.currentState.objects[thisTag];
+                        tagString = Planner.stringifyEntity(thisEntity, world.currentState);
+                    }
+                    if (typeof tagString != "undefined") {
+                        promptTextContributions.push("  (" + (i+1) + ") - " + tagString + "\n");
+                    } else {
+                        let thisInterpretationDNF = thisInterpretation.interpretation;
+                        let estPathLength = Planner.heuristicFunction(world.currentState, thisInterpretationDNF);
+                        promptTextContributions.push("  (" + (i+1) + ") - Path of length " + estPathLength + "\n");
+                    }
+                }
+                promptText += promptTextContributions.join("or\n");
+                promptText += "\nor any of them?\n"
+                let chosenInterpretationInput : any = prompt(promptText, "any");
+                let chosenInterpretationIndex = chosenInterpretationInput;
+                if (chosenInterpretationIndex.toLowerCase() != "any") {
+                    let chosenInterpretation : Interpreter.InterpretationResult;
+                    if (chosenInterpretationIndex != null) {
+                        chosenInterpretationIndex = parseInt(chosenInterpretationIndex) - 1;
+                    }
+                    if (
+                        chosenInterpretationIndex == null
+                        || chosenInterpretationIndex < 0
+                        || chosenInterpretationIndex > (interpretations.length - 1)
+                        || (chosenInterpretationIndex + 1) != chosenInterpretationInput
+                    ) {
+                        alert("You didn´t specify a valid interpretation, using 'any' by default")
+                    } else {
+                        chosenInterpretation = interpretations[chosenInterpretationIndex];
+                        interpretations = [chosenInterpretation]
+                    }
+                }
+                
+                /* // user chooses based on estimatedPathLength
                 let promptText = "";
                 promptText += "Several interpretations were found.\n";
                 promptText += "Please choose one based on it´s estimated number of required actions,\n";
@@ -114,6 +163,7 @@ module Shrdlite {
                     }
                     interpretations = [chosenInterpretation]
                 }
+                */
             }
         }
         catch(err) {
@@ -177,7 +227,6 @@ module Shrdlite {
         world.printDebugInfo("Final plan: " + finalPlan.join(", "));
         return finalPlan;
     }
-
 
     /** This is a convenience function that recognizes strings
      * of the form "p r r d l p r d"
