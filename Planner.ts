@@ -137,6 +137,26 @@ module Planner {
         let printPos = 0;
         let entity = null;
         
+        // find out where the last move places it's object
+        let lastRelativeEntityTag = null;
+        let lastRelativeEntity;
+        let relativeEntityRelation = "on";
+        let lastState = stateSequence[stateSequence.length - 1];
+        if (lastState.holding == null) {
+            let relativeStack = lastState.stacks[lastState.arm];
+            if (relativeStack.length == 1) {
+                lastRelativeEntityTag = "floor";
+            } else {
+                lastRelativeEntityTag = relativeStack[relativeStack.length - 2];
+                lastRelativeEntity = lastState.objects[lastRelativeEntityTag];
+                if (lastRelativeEntity.form == "box") {
+                    relativeEntityRelation = "in";
+                }
+            }
+        } else {
+            // the arm is holding something in the last state, the command was 'take'
+        }
+        
         let i = 0;
         let stateIndex = 0;
         let numInsertedTexts = 0;
@@ -147,15 +167,6 @@ module Planner {
             if (plan[i] == "p") {
                 // identified current entity, print at last known position
                 
-                let text = "";
-                
-                if (plan.indexOf("d", i+1) == -1) {
-                    // target will not be dropped
-                    text += "I take ";
-                } else {
-                    text += "I move ";
-                }
-                
                 // state before this action
                 let state = stateSequence[stateIndex];
                 
@@ -164,7 +175,28 @@ module Planner {
                 let entityTag = entityStack[entityStack.length - 1];
                 let entity = state.objects[entityTag];
                 
-                text += stringifyEntity(entity, state)
+                let entityString = stringifyEntity(entity, state);
+                
+                let text = "";
+                
+                if (plan.indexOf("d", i+1) == -1) {
+                    // target will not be dropped
+                    text += "I take " + entityString;
+                } else if (plan.indexOf("p", i+1) == -1) {
+                    // target will be dropped, but nothing else will be picked up
+                    let relativeText;
+                    if (lastRelativeEntityTag == "floor") {
+                        relativeText = "the floor"
+                    } else {
+                        relativeText = stringifyEntity(lastRelativeEntity, state);
+                    }
+                    text += "I put "
+                            + entityString + " "
+                            + relativeEntityRelation + " "
+                            + relativeText;
+                } else {
+                    text += "I move " + entityString;
+                }
                 
                 plan.splice(printPos, 0, text);
                 numInsertedTexts++;
@@ -180,7 +212,7 @@ module Planner {
             stateIndex++;
         }
         
-        // add 'first', 'finally'
+        // add 'first', 'then'
         if (numInsertedTexts > 1) {
             for (let i = plan.length - 1; i >= 0; i--) {
                 if (!(plan[i] == "r" || plan[i] == "l" || plan[i] == "d" || plan[i] == "p")) {
@@ -197,7 +229,13 @@ module Planner {
                     } else if (i == 0) {
                         plan[i] = "First, " + plan[i];
                     } else {
-                        plan[i] = "Then, " + plan[i];
+                        let nextText;
+                        if (Math.random() < 0.5) {
+                            nextText = "Then, ";
+                        } else {
+                            nextText = "Next, ";
+                        }
+                        plan[i] = nextText + plan[i];
                     }
                 }
             }
