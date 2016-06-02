@@ -135,11 +135,11 @@ module Planner {
         
         // next position in plan to insert descriptive text
         let printPos = 0;
-        let entity = null;
+        let entity :any= null;
         
         // find out where the last move places it's object
-        let lastRelativeEntityTag = null;
-        let lastRelativeEntity;
+        let lastRelativeEntityTag :any = null;
+        let lastRelativeEntity:any;
         let relativeEntityRelation = "on";
         let lastState = stateSequence[stateSequence.length - 1];
         if (lastState.holding == null) {
@@ -184,7 +184,7 @@ module Planner {
                     text += "I take " + entityString;
                 } else if (plan.indexOf("p", i+1) == -1) {
                     // target will be dropped, but nothing else will be picked up
-                    let relativeText;
+                    let relativeText:any;
                     if (lastRelativeEntityTag == "floor") {
                         relativeText = "the floor"
                     } else {
@@ -229,7 +229,7 @@ module Planner {
                     } else if (i == 0) {
                         plan[i] = "First, " + plan[i];
                     } else {
-                        let nextText;
+                        let nextText:any;
                         if (Math.random() < 0.5) {
                             nextText = "Then, ";
                         } else {
@@ -247,7 +247,7 @@ module Planner {
     /**
      * generate a descriptive text which uniquely identifies 'entity'
      */
-    export function stringifyEntity(entity, state) : string {
+    export function stringifyEntity(entity:any, state:any) : string {
         
         let res = "the "
         
@@ -283,7 +283,7 @@ module Planner {
      * get the list of all permutations of object properties that uniquely defines the same object
      * as @param entity in @param state. Last combination in the list will be the shortest.
      */
-    function findUniqueIdCombs(entity, state : WorldState) {
+    function findUniqueIdCombs(entity:any, state : WorldState) {
         //
         // assertion: 'entity' is unique in 'state'
         //
@@ -294,10 +294,10 @@ module Planner {
             return [];
         }
         
-        let uniqueCombs = [];
+        let uniqueCombs :any= [];
         
         // compute the current property combination
-        let comb = [];
+        let comb :any= [];
         for (let prop in entity) {
             if (entity[prop] != null) {
                 comb.push(prop);
@@ -419,7 +419,7 @@ module Planner {
         return minHeuristic;
     }
     
-    function estimatedPathLength(state : WorldState, condition : Interpreter.Literal) {
+    function estimatedPathLength(state : WorldState, condition : Interpreter.Literal) :any{
         
         // return value
         let result : number = 0;
@@ -477,9 +477,9 @@ module Planner {
             if (args.length == 2) {
 
                 // target entity
-                let targetTag;
+                let targetTag:any;
                 // relative entity
-                let relativeTag;
+                let relativeTag:any;
 
                 // if a under b estimated shortest path is b above a 
                 if (rel == "above") {
@@ -624,7 +624,7 @@ module Planner {
                 let relativeTag = args[1];
                 let relativeStackIndex = Interpreter.stackIndex(relativeTag, state);
 
-                let oppositeRelation;
+                let oppositeRelation:any;
                 if (rel == "leftof") {
                     oppositeRelation = "rightof";
                 } else {
@@ -856,7 +856,7 @@ module Planner {
      * 
      * @param obj the object to clone
      */
-    export function cloneObject(obj) : typeof obj {
+    export function cloneObject(obj:any) : typeof obj {
         if (obj === null || typeof obj !== 'object') {
             return obj;
         }

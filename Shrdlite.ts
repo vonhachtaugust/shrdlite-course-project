@@ -75,15 +75,15 @@ module Shrdlite {
             if (interpretations.length > 1) {
                 
                 // user chooses based on target entity
-                let promptText = "";
+                let promptText :any = "";
                 promptText += "Several interpretations were found.\n";
                 promptText += "Did you mean ...\n\n";
-                let promptTextContributions = [];
+                let promptTextContributions:any = [];
                 let usedTags = new collections.Set<string>();
                 for (let i = 0; i < interpretations.length; i++) {
                     let thisInterpretation = interpretations[i];
                     let thisInterpretationTargetTags = thisInterpretation.targetTags;
-                    let tagString;
+                    let tagString:any;
                     for (let j = 0; j < thisInterpretationTargetTags.length; j++) {
                         let thisTag = thisInterpretationTargetTags[j];
                         if (usedTags.contains(thisTag)) continue;
@@ -121,49 +121,6 @@ module Shrdlite {
                     }
                 }
                 
-                /* // user chooses based on estimatedPathLength
-                let promptText = "";
-                promptText += "Several interpretations were found.\n";
-                promptText += "Please choose one based on it´s estimated number of required actions,\n";
-                promptText += "or type 'all' to attempt to calculate a plan for each of them.\n\n";
-                let bestInterpretation;
-                let bestInterpretationHeuristic = Infinity;
-                for (let i = 0; i < interpretations.length; i++) {
-                    let thisInterpretationResult = interpretations[i];
-                    let thisInterpretation = thisInterpretationResult.interpretation;
-                    let estPathLength = Planner.heuristicFunction(world.currentState, thisInterpretation);
-                    promptText += "  (" + (i+1) + "): " + estPathLength;
-                    if (estPathLength == 0) {
-                        promptText += "  <- Already fulfilled"
-                    }
-                    promptText += "\n";
-                    if (estPathLength < bestInterpretationHeuristic) {
-                        bestInterpretation = thisInterpretationResult;
-                        bestInterpretationHeuristic = estPathLength;
-                    }
-                }
-                promptText += "\n";
-                let chosenInterpretationInput : any = prompt(promptText, 1 + "-" + interpretations.length);
-                let chosenInterpretationIndex = chosenInterpretationInput;
-                if (chosenInterpretationIndex.toLowerCase() != "all") {
-                    let chosenInterpretation : Interpreter.InterpretationResult;
-                    if (chosenInterpretationIndex != null) {
-                        chosenInterpretationIndex = parseInt(chosenInterpretationIndex) - 1;
-                    }
-                    if (
-                        chosenInterpretationIndex == null
-                        || chosenInterpretationIndex < 0
-                        || chosenInterpretationIndex > (interpretations.length - 1)
-                        || (chosenInterpretationIndex + 1) != chosenInterpretationInput
-                    ) {
-                        alert("You didn´t specify a valid interpretation, so the one with minimum number of actions was automatically chosen")
-                        chosenInterpretation = bestInterpretation;
-                    } else {
-                        chosenInterpretation = interpretations[chosenInterpretationIndex];
-                    }
-                    interpretations = [chosenInterpretation]
-                }
-                */
             }
         }
         catch(err) {
@@ -183,7 +140,7 @@ module Shrdlite {
                 let promptText = "";
                 promptText += "Several plans were found.\n";
                 promptText += "Please choose one based on it´s required number of moves.\n\n";
-                let bestPlan;
+                let bestPlan:any;
                 let bestPlanLength = Infinity;
                 for (let i = 0; i < plans.length; i++) {
                     let thisPlan = plans[i];

@@ -17,11 +17,10 @@ module Interpreter {
 
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
-
     var currentParseEvaluated = 0;
     var whichParseInfoText = "";
-    var hasPrintedAmguityInfo = false;
-    var currentPossibleTargetTags = [];
+    var hasPrintedAmguityInfo : boolean = false;
+    var currentPossibleTargetTags : any = [];
 /**
 Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. 
 * @param parses List of parses produced by the Parser.
@@ -31,7 +30,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
         var errors : Error[] = [];
         var interpretations : InterpretationResult[] = [];
-        let successfulInterpretation;
+        let successfulInterpretation : any;
         parses.forEach((parseresult) => {
             currentParseEvaluated++;
             if (parses.length > 1) {
@@ -64,7 +63,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
     }
     
-    export function systemPrint(string) {
+    export function systemPrint (string:any) :any {
         if (typeof document != "undefined") {
             //document.getElementById("dialogue").innerHTML += "<p class='system'>" + string + "</p>";
             alert(string);
@@ -121,7 +120,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         let interpretation : DNFFormula = [];
     
         // Inverse relation map
-        let inverseRelation = {};
+        let inverseRelation : any= {};
         inverseRelation["ontop"] = "under";
         inverseRelation["inside"] = "under";
         inverseRelation["above"] = "under";
@@ -254,8 +253,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             
                 let relativeCombs = combinations(possibleRelativeTags, possibleTargetTags.length);
                 
-                for (let i = 0; i < relativeCombs.length; i++) {
-                    let thisConjunction = [];
+                for (let i  = 0; i < relativeCombs.length; i++) {
+                    let thisConjunction :any = [];
                     let thisComb = relativeCombs[i];
                     for (let j = 0; j < possibleTargetTags.length; j++) {
                         thisConjunction.push(
@@ -271,7 +270,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                 
                 let combs : string[][] = cartesianProd(possibleTargetTags,possibleRelativeTags);
                 
-                let conjunctions = [];
+                let conjunctions :any = [];
                 for (let i = 0; i < combs.length; i++) {
                     let comb = combs[i];
                     if (checkRelation(cmd.location.relation, [comb[0],comb[1]], state)) {
@@ -317,8 +316,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     /**
      * generate the DNF formula which corresponds to f1 AND f2
      */
-    function expandConjunction(f1, f2) {
-        let res = [];
+    function expandConjunction(f1 :any, f2 :any) :any {
+        let res :any= [];
         for (let i = 0; i < f1.length; i++) {
             for (let j = 0; j < f2.length; j++) {
                 res.push(f1[i].concat(f2[j]));
@@ -327,15 +326,15 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return res;
     }
     
-    function getCombinatedConjunctions(possibleTargetTags, possibleRelativeTags, rel, state) : Interpreter.DNFFormula {
-        let interpretation = [];
+    function getCombinatedConjunctions(possibleTargetTags:any, possibleRelativeTags: any, rel:any, state:any) : Interpreter.DNFFormula {
+        let interpretation :any = [];
         
         let numTargetTags = possibleTargetTags.length;
         let relativeTagCombs = combinations(possibleRelativeTags, numTargetTags);
         
         for (let i = 0; i < relativeTagCombs.length; i++) {
-            let thisComb = relativeTagCombs[i];
-            let thisConjunction = [];
+            let thisComb :any = relativeTagCombs[i];
+            let thisConjunction :any = [];
             let j = 0;
             while (j < possibleTargetTags.length) {
                 let args = [possibleTargetTags[j], thisComb[j]];
@@ -358,7 +357,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return interpretation;
     }
     
-    function promptIdentifyEntityTag(targetEntity, possibleTargetTags : string[], state : WorldState) : string {
+    function promptIdentifyEntityTag(targetEntity :any , possibleTargetTags : string[], state : WorldState) : string {
         
         targetEntity = Planner.cloneObject(targetEntity);
         if (targetEntity.object) targetEntity = targetEntity.object;
@@ -369,7 +368,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         
         let IdFeatures = ["size","color","form"];
         
-        let cmpTagsFcn = function(a,b) {
+        let cmpTagsFcn :any = function(a:any,b:any) {
             if (a.score < b.score) {
                 return -1;
             } else if (a.score == b.score) {
@@ -418,7 +417,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let objStackIndex = window.prompt(whichParseInfoText + "Please specificy in which stack the " + targetEntityText + " is", "0-" + (state.stacks.length-1));
             
             if (objStackIndex != null) {
-                let newPossibleTargetTags = [];
+                let newPossibleTargetTags :any= [];
                 for (let i = 0; i < possibleTargetTags.length; i++) {
                     if (stackIndex(possibleTargetTags[i],state) == parseInt(objStackIndex)) {
                         newPossibleTargetTags.push(possibleTargetTags[i]);
@@ -433,7 +432,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let objStackIndexOf = window.prompt(whichParseInfoText + "Please specificy the position of the " + targetEntityText + " in it's stack, 0 being the lowest", "");
             
             if (objStackIndexOf != null) {
-                let newPossibleTargetTags = [];
+                let newPossibleTargetTags : any = [];
                 for (let i = 0; i < possibleTargetTags.length; i++) {
                     if (stackIndexOf(possibleTargetTags[i],state) == parseInt(objStackIndexOf)) {
                         newPossibleTargetTags.push(possibleTargetTags[i]);
@@ -449,7 +448,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return possibleTargetTags[0];
     }
     
-    function stringifyEntity(targetEntity) : string {
+    function stringifyEntity(targetEntity:any) : string {
         if (targetEntity.object) targetEntity = targetEntity.object;
         let targetEntityText : string;
         let targetEntityTextParts : string[];
@@ -469,13 +468,13 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return targetEntityText;
     }
     
-    export function arrayIntersection(xs, ys) {
+    export function arrayIntersection(xs :any, ys:any) {
         
         // return value
-        let res = [];
+        let res :any= [];
         
-        let short;
-        let long;
+        let short:any;
+        let long:any;
         if (xs.length < ys.length) {
             short = xs;
             long = ys;
@@ -500,9 +499,9 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
      * @param list array of elements to combine
      * @param l length of the combinations
      */
-    export function combinations(list, l) {
-        var holdingArr = [];
-        var recursiveComb = function(singleSolution) {
+    export function combinations(list : any, l: any) {
+        var holdingArr :any = [];
+        var recursiveComb: any = function(singleSolution:any) {
             if (singleSolution.length > l-1) {
                 holdingArr.push(singleSolution);
                 return;
@@ -524,8 +523,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         let featureValVsNumberMap : collections.Dictionary<string,number> = new collections.Dictionary<string,number>();
         
         for (let j = 0; j < possibleTargetTags.length; j++) {
-            let thisEntityFeatureVal;
-            thisEntityFeatureVal = state.objects[possibleTargetTags[j]][thisFeature];
+            let thisEntityFeatureVal:string = state.objects[possibleTargetTags[j]][thisFeature];
             
             // check if this feature value has occured before
             if (!featureValVsNumberMap.containsKey(thisEntityFeatureVal)) {
@@ -589,7 +587,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
                     
                     let thisRelativeIsRelated = false;
                     
-                    let thisRelative;
+                    let thisRelative: any;
                     if (thisRelativeTag == "floor") {
                         thisRelative = {"size":null,"color":null,"form":"floor"};
                     } else {
@@ -766,7 +764,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
      * @param x the element search for
      * @param xs the array in which to search
      */
-    function count(x, xs) : number {
+    function count(x:any, xs:any) : number {
         
         // return value
         let res = 0;
@@ -788,7 +786,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         if (args.length == 1) {
             
             // entity a
-            let a;
+            let a:any;
             if (args[0] == "floor") {
                 a = {"size":null,"color":null,"form":"floor"};
             } else {
@@ -813,7 +811,7 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
             let a = state.objects[args[0]];
             
             // entity b
-            let b;
+            let b:any;
             if (args[1] == "floor") {
                 b = {"size":null,"color":null,"form":"floor"};
             } else {
