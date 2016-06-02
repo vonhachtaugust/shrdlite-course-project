@@ -856,7 +856,7 @@ module Planner {
      * 
      * @param obj the object to clone
      */
-    function cloneObject(obj) : typeof obj {
+    export function cloneObject(obj) : typeof obj {
         if (obj === null || typeof obj !== 'object') {
             return obj;
         }

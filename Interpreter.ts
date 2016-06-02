@@ -57,6 +57,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             currentParseEvaluated = 0;
             return interpretations;
         } else {
+            hasPrintedAmguityInfo = false;
+            currentParseEvaluated = 0;
             // only throw the first error found
             throw errors[0];
         }
@@ -358,6 +360,8 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     
     function promptIdentifyEntityTag(targetEntity, possibleTargetTags : string[], state : WorldState) : string {
         
+        targetEntity = Planner.cloneObject(targetEntity);
+        if (targetEntity.object) targetEntity = targetEntity.object;
         if (targetEntity.object) targetEntity = targetEntity.object;
         
         // figure out how to denot 'targetEntity' in natural language
@@ -539,7 +543,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
     
     // returns list of tags for objects satisfying 'entity' in world 'state'
     export function getPossibleEntitieTags(entity : any, state : WorldState) : string[] {
-        
         // return value
         var result : any[] = [];
         let targetObject = entity;
