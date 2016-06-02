@@ -868,25 +868,6 @@ module Planner {
     }
     
     /**
-     * mathematical min over the number in 'vs'
-     * 
-     * @param vs the number through which to search
-     */
-    export function min(vs : number[]) : number {
-        
-        // return value
-        let min : number = Infinity;
-        
-        for (let i = 0; i < vs.length; i++) {
-            if (vs[i] < min) {
-                min = vs[i];
-            }
-        }
-        
-        return min;
-    }
-    
-    /**
      * mathematical argmin over the number in 'vs'
      * 
      * @param vs the number through which to search

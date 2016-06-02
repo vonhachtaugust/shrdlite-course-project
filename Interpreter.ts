@@ -313,19 +313,6 @@ function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula
         return interpretation;
     }
     
-    /**
-     * generate the DNF formula which corresponds to f1 AND f2
-     */
-    function expandConjunction(f1 :any, f2 :any) :any {
-        let res :any= [];
-        for (let i = 0; i < f1.length; i++) {
-            for (let j = 0; j < f2.length; j++) {
-                res.push(f1[i].concat(f2[j]));
-            }
-        }
-        return res;
-    }
-    
     function getCombinatedConjunctions(possibleTargetTags:any, possibleRelativeTags: any, rel:any, state:any) : Interpreter.DNFFormula {
         let interpretation :any = [];
         
