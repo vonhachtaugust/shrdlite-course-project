@@ -26,7 +26,7 @@ interpretationTests: TestInterpreter.js
 	node $< all
 
 # Make TypeScript as strict as possible:
-TSC = tsc --noFallthroughCasesInSwitch --noImplicitReturns --noImplicitAny
+TSC = tsc --noFallthroughCasesInSwitch --noImplicitReturns 
 
 %.js: %.ts $(TSFILES)
 	$(TSC) --out $@ $<

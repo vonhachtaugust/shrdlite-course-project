@@ -170,6 +170,10 @@ API Reference
 http://chalmersgu-ai-course.github.io/shrdlite-course-project/doc/
 
 Tests
+There is an error "TS7017" with the complie command 'make all' on the Interpreter.ts
+file in the line (513,47). Eventhough the type any was defined but the error did not go away.
+
+We recommend to use the following command to complie the project.
 tsc --out shrdlite-html.js shrdlite-html.ts
 
 Contributors
